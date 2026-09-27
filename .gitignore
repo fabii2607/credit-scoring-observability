@@ -1,5 +1,9 @@
-# Ambiente virtual
+# Virtual environment
 .venv/
+
+# Environment variables
+.env
+.env.*
 
 # VS Code
 .vscode/
@@ -8,18 +12,24 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+.pytest_cache/
+build/
+dist/
 
 # Jupyter
 .ipynb_checkpoints/
 
-# Dados brutos
+# Raw datasets
 data/raw/*
 !data/raw/.gitkeep
 
-# Modelos treinados
+# Trained models
 models/*.pkl
 models/*.joblib
 
-# Sistema operacional
+# Logs
+*.log
+
+# Operating system
 .DS_Store
 Thumbs.db
