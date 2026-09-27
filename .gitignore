@@ -1,0 +1,25 @@
+# Ambiente virtual
+.venv/
+
+# VS Code
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dados brutos
+data/raw/*
+!data/raw/.gitkeep
+
+# Modelos treinados
+models/*.pkl
+models/*.joblib
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

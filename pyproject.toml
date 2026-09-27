@@ -1,0 +1,27 @@
+[project]
+name = "credit-scoring-observability"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "fabii_necca", email = "neccaluizon@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "ipykernel>=7.3.0",
+    "joblib>=1.6.0",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.11.2",
+    "numpy>=2.4.6",
+    "openpyxl>=3.1.5",
+    "pandas>=3.0.6",
+    "pandera>=0.33.1",
+    "scikit-learn>=1.9.1",
+]
+
+[project.scripts]
+credit-scoring-observability = "credit_scoring_observability:main"
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
