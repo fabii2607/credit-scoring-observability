@@ -1,35 +1,31 @@
 # Virtual environment
 .venv/
 
-# Environment variables
+# Environment variables / credentials
 .env
 .env.*
+!.env.example
 
-# VS Code
+# VS Code / Python / Jupyter
 .vscode/
-
-# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+.ipynb_checkpoints/
 build/
 dist/
 
-# Jupyter
-.ipynb_checkpoints/
+# Large local data: raw, processed, reference and invalid batches
+data/
 
-# Raw datasets
-data/raw/*
-!data/raw/.gitkeep
-
-# Trained models
+# Trained binary models: distribute separately or reproduce using notebooks
 models/*.pkl
 models/*.joblib
 
-# Logs
-*.log
+# Small JSON metrics/metadata files in models/ may be committed intentionally.
 
-# Operating system
+# Logs and operating system
+*.log
 .DS_Store
 Thumbs.db

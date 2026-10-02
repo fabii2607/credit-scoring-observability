@@ -1,7 +1,7 @@
 [project]
 name = "credit-scoring-observability"
 version = "0.1.0"
-description = "Add your description here"
+description = "Credit scoring, data quality, drift detection and model observability for the FIAP Tech Challenge Phase 4."
 readme = "README.md"
 authors = [
     { name = "fabii_necca", email = "neccaluizon@gmail.com" }
@@ -15,13 +15,17 @@ dependencies = [
     "numpy>=2.4.6",
     "openpyxl>=3.1.5",
     "pandas>=3.0.6",
-    "pandera>=0.33.1",
+    "pandera[pandas]>=0.33.1",
     "scikit-learn>=1.9.1",
 ]
 
-[project.scripts]
-credit-scoring-observability = "credit_scoring_observability:main"
-
+# No CLI entry point is declared until a real `main()` is implemented.
+# Notebooks and Python modules are the current supported entry points.
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
