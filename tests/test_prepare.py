@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -130,3 +131,17 @@ def test_prepare_writes_artifacts(raw_csv, tmp_path):
     assert len(pool) == prepared.report["production_pool_rows"]
     report = json.loads((out / "prepare_report.json").read_text(encoding="utf-8"))
     assert report["default_salt_used"] is False
+
+
+def test_reference_sample_only_keeps_contract_valid_rows(loans):
+    loans = loans.copy()
+    loans.loc[loans.sample(frac=0.2, random_state=0).index, "annual_inc"] = np.nan
+    prepared = build_frames(loans, SALT, PARAMS)
+    sample = prepared.reference_sample
+    dropped = prepared.report["reference_sample_dropped_by_contract"]
+    assert dropped > 0
+    assert len(sample) == PARAMS.reference_sample_rows - dropped
+    assert sample["annual_inc"].notna().all()
+    validate_model_input(sample.loc[:, MODEL_FEATURES])
+    # O treino mantém as linhas com renda nula (o pipeline imputa).
+    assert prepared.reference["annual_inc"].isna().any()

@@ -11,7 +11,7 @@ mesma ordem, `random_state=42`) e acrescenta o que as outras etapas precisam:
 5. Grava, sem imputação (o pipeline do modelo imputa):
    - `reference.parquet`: treino do modelo (Referência), `split = "train"`;
    - `reference_sample.parquet`: as 100 mil linhas do Reference Dataset do
-     notebook 02, base de comparação do drift;
+     notebook 02, sem as que o contrato barraria (renda nula), base do drift;
    - `production_pool.parquet`: o teste (269.620 linhas), nunca visto no treino,
      de onde a Etapa 2 tira os lotes mensais;
    - `prepare_report.json`: contagens e checagens.
@@ -51,6 +51,7 @@ from credit_scoring_observability.config import (
     TARGET,
     raw_file,
 )
+from credit_scoring_observability.data_contract import MODEL_INPUT_SCHEMA
 from credit_scoring_observability.logger import get_logger, setup_logging
 from credit_scoring_observability.parameters import SplitParams, get_params
 from credit_scoring_observability.preprocessing import (
@@ -63,6 +64,10 @@ from credit_scoring_observability.preprocessing import (
 logger = get_logger(__name__)
 
 DEFAULT_SALT = "troque-este-sal"
+# Features que o contrato exige preenchidas (as outras o pipeline imputa).
+REQUIRED_FEATURES = [
+    name for name, column in MODEL_INPUT_SCHEMA.columns.items() if not column.nullable
+]
 UNKNOWN_REGION = "Unknown"
 
 
@@ -83,6 +88,7 @@ class PrepareReport:
     modeling_rows: int
     reference_rows: int
     reference_sample_rows: int
+    reference_sample_dropped_by_contract: int
     production_pool_rows: int
     default_rate_reference: float
     default_rate_pool: float
@@ -181,7 +187,11 @@ def build_frames(loans: pd.DataFrame, salt: str, params: SplitParams) -> Prepare
     reference[SPLIT_COLUMN] = "train"
     pool = assemble(X_test, y_test)
     sample_idx = reference_sample_index(X_train, y_train, params.reference_sample_rows)
+    # A amostra é pontuada como base do drift: sai a linha que o contrato barraria
+    # (ex.: renda nula, 1 em 100 mil). O treino mantém todas, o pipeline imputa.
     sample = reference.loc[sample_idx]
+    sample_ok = sample[REQUIRED_FEATURES].notna().all(axis=1)
+    sample = sample.loc[sample_ok]
 
     overlap = len(set(reference[ID_COLUMN]) & set(pool[ID_COLUMN]))
     if overlap:
@@ -194,6 +204,7 @@ def build_frames(loans: pd.DataFrame, salt: str, params: SplitParams) -> Prepare
         modeling_rows=len(X),
         reference_rows=len(reference),
         reference_sample_rows=len(sample),
+        reference_sample_dropped_by_contract=int((~sample_ok).sum()),
         production_pool_rows=len(pool),
         default_rate_reference=round(float(y_train.mean()), 6),
         default_rate_pool=round(float(y_test.mean()), 6),
