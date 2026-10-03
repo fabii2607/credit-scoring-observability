@@ -191,9 +191,15 @@ def get_feature_groups(
 
 def build_preprocessor(
     X_train: pd.DataFrame,
+    sparse: bool = False,
 ) -> ColumnTransformer:
-    """Build the preprocessing pipeline without fitting it."""
+    """Build the preprocessing pipeline without fitting it.
+
+    `sparse=True` reproduces the V2 pipeline (notebook 04): float32 one-hot and a
+    sparse output matrix, which saves memory with the saga solver.
+    """
     numeric_features, categorical_features = get_feature_groups(X_train)
+    encoder_options = {"sparse_output": True, "dtype": np.float32} if sparse else {}
 
     numeric_pipeline = Pipeline(
         steps=[
@@ -221,6 +227,7 @@ def build_preprocessor(
                 "encoder",
                 OneHotEncoder(
                     handle_unknown="ignore",
+                    **encoder_options,
                 ),
             ),
         ]
@@ -238,7 +245,8 @@ def build_preprocessor(
                 categorical_pipeline,
                 categorical_features,
             ),
-        ]
+        ],
+        sparse_threshold=1.0 if sparse else 0.3,
     )
 
 
