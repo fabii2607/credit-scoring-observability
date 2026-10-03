@@ -53,6 +53,9 @@ CATEGORICAL_FEATURES = [
 ]
 
 
+EMP_LENGTH_RULE = "emp_length_consistency"
+
+
 def non_negative(*, nullable: bool = True) -> pa.Column:
     """Numeric values >= 0; NaN allowed only when the model imputes the field."""
     return pa.Column(float, Check.ge(0), nullable=nullable, coerce=True)
@@ -110,11 +113,14 @@ MODEL_INPUT_SCHEMA = pa.DataFrameSchema(
         "credit_history_years": non_negative(),
     },
     checks=[
+        # Linha a linha (não `.all()`): o relatório aponta quais linhas falharam.
         Check(
             lambda frame: (
                 (frame["emp_length_missing"] == 1) == (frame["emp_length_years"] == -1)
-            ).all(),
-            error="emp_length_missing must match emp_length_years == -1",
+            ),
+            name=EMP_LENGTH_RULE,
+            error=f"{EMP_LENGTH_RULE}: emp_length_missing must match "
+            "emp_length_years == -1",
         ),
     ],
     strict=True,
