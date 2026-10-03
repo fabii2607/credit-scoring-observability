@@ -1,0 +1,34 @@
+# Parâmetros ajustáveis do pipeline, validados por
+# src/credit_scoring_observability/parameters.py (chave desconhecida = erro).
+# Cada etapa é dona da sua seção.
+
+# ── Etapa 1 ──────────────────────────────────────────────────────────────────
+split:
+  # Mesmo split dos notebooks 02–04: 80/20 estratificado, random_state 42.
+  # O teste (269.620 linhas) vira o pool de produção.
+  test_size: 0.2
+  reference_sample_rows: 100000
+  chunksize: 100000
+
+train:
+  # Configuração do notebook 04 (V2).
+  train_sample_rows: 300000
+  validation_fraction: 0.2
+  # Seleção do threshold na validação: maior F2 com Precision mínima.
+  min_precision: 0.30
+  threshold_grid: {start: 0.10, stop: 0.90, step: 0.025}
+  class_weights: [standard, balanced]
+  max_iter: 500
+  tol: 0.001
+
+contract:
+  # Volume mínimo de um lote para ser pontuado.
+  min_rows: 500
+
+# ── Etapa 2 (drift) ──────────────────────────────────────────────────────────
+# simulation, drift, performance, retrain: a definir pela Etapa 2.
+
+# ── Etapa 4 (governança) ─────────────────────────────────────────────────────
+retention:
+  # LGPD: lote bloqueado fica na quarentena só o tempo de a origem corrigir.
+  quarantine_days: 30
