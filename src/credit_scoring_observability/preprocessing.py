@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -10,7 +9,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, RobustScaler
-
 
 GOOD_STATUS = [
     "Fully Paid",
@@ -74,7 +72,7 @@ def load_modeling_data(
     if not data_path.exists():
         raise FileNotFoundError(f"Dataset not found: {data_path.resolve()}")
 
-    cols_to_load = BASELINE_FEATURES + ["loan_status", "issue_d"]
+    cols_to_load = [*BASELINE_FEATURES, "loan_status", "issue_d"]
     chunks: list[pd.DataFrame] = []
 
     for chunk in pd.read_csv(
@@ -83,18 +81,12 @@ def load_modeling_data(
         chunksize=chunksize,
         low_memory=False,
     ):
-        filtered = chunk[
-            chunk["loan_status"].isin(GOOD_STATUS + BAD_STATUS)
-        ].copy()
+        filtered = chunk[chunk["loan_status"].isin(GOOD_STATUS + BAD_STATUS)].copy()
         chunks.append(filtered)
 
     df = pd.concat(chunks, ignore_index=True)
 
-    df["target"] = (
-        df["loan_status"]
-        .isin(BAD_STATUS)
-        .astype(int)
-    )
+    df["target"] = df["loan_status"].isin(BAD_STATUS).astype(int)
 
     return df
 
@@ -104,11 +96,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     # Loan term: "36 months" -> 36
-    df["term"] = (
-        df["term"]
-        .str.extract(r"(\d+)", expand=False)
-        .astype(int)
-    )
+    df["term"] = df["term"].str.extract(r"(\d+)", expand=False).astype(int)
 
     # Employment length
     df["emp_length_years"] = df["emp_length"].map(EMP_LENGTH_MAP)
@@ -116,9 +104,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["emp_length_years"] = df["emp_length_years"].fillna(-1)
 
     # Consolidated FICO score
-    df["fico_avg"] = (
-        df["fico_range_low"] + df["fico_range_high"]
-    ) / 2
+    df["fico_avg"] = (df["fico_range_low"] + df["fico_range_high"]) / 2
 
     # Temporal features
     df["issue_date"] = pd.to_datetime(
@@ -134,8 +120,8 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     df["credit_history_years"] = (
-        (df["issue_date"] - df["earliest_cr_date"]).dt.days / 365.25
-    )
+        df["issue_date"] - df["earliest_cr_date"]
+    ).dt.days / 365.25
 
     # Clearly invalid values become missing and are imputed later
     df.loc[df["credit_history_years"] < 0, "credit_history_years"] = np.nan
@@ -189,13 +175,9 @@ def get_feature_groups(
     X: pd.DataFrame,
 ) -> tuple[list[str], list[str]]:
     """Identify numeric and categorical input columns."""
-    numeric_features = (
-        X.select_dtypes(include=["number"]).columns.tolist()
-    )
+    numeric_features = X.select_dtypes(include=["number"]).columns.tolist()
 
-    categorical_features = (
-        X.select_dtypes(exclude=["number"]).columns.tolist()
-    )
+    categorical_features = X.select_dtypes(exclude=["number"]).columns.tolist()
 
     return numeric_features, categorical_features
 
@@ -262,9 +244,7 @@ def create_reference_dataset(
 ) -> pd.DataFrame:
     """Create a stratified reference dataset from the training population."""
     if n_samples > len(X_train):
-        raise ValueError(
-            "n_samples cannot be greater than the training dataset size."
-        )
+        raise ValueError("n_samples cannot be greater than the training dataset size.")
 
     reference_idx, _ = train_test_split(
         X_train.index,
@@ -290,11 +270,7 @@ def validate_processed_sample(
     """Validate transformed data for NaNs and infinite values."""
     transformed = preprocessor.transform(X_sample)
 
-    array = (
-        transformed.toarray()
-        if hasattr(transformed, "toarray")
-        else transformed
-    )
+    array = transformed.toarray() if hasattr(transformed, "toarray") else transformed
 
     return {
         "nan_count": int(np.isnan(array).sum()),

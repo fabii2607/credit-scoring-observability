@@ -1,0 +1,7 @@
+# Configs e scripts são montados em containers Linux: sempre LF.
+* text=auto eol=lf
+*.png binary
+*.pdf binary
+*.parquet binary
+*.joblib binary
+*.gz binary
