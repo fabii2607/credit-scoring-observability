@@ -11,7 +11,7 @@ O que já existe e você usa (detalhes em [etapa-1-dados.md](etapa-1-dados.md)):
 | Artefato / função | Como obter | Formato |
 |---|---|---|
 | `data/processed/production_pool.parquet` | `make prepare` | 269.620 linhas nunca vistas no treino: `customer_id`, `issue_date`, `region`, 23 features, `target` |
-| `data/processed/reference_sample.parquet` | `make prepare` | 100 mil linhas da Referência, mesmas colunas: **a base de comparação do drift** |
+| `data/processed/reference_sample.parquet` | `make prepare` | 99.999 linhas da Referência (o Reference Dataset do notebook 02 sem a linha de renda nula), mesmas colunas: **a base de comparação do drift** |
 | `models/credit_scoring_optimized.joblib` + `_metadata.json` | `make train` | V2, threshold 0,20 |
 | `registry.load_model().score(lote)` | — | lote + `score` (probabilidade de default) + `prediction` (0/1) |
 | `evaluate.classification_metrics(y, score, threshold)` | — | accuracy, precision, recall, f1, f2, roc_auc, pr_auc, ks, brier, approval_rate |

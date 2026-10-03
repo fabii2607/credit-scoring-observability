@@ -9,7 +9,7 @@ Um handoff por etapa do Tech Challenge, para cada integrante **seguir sozinho** 
 | 1º | Validação de dados e contratos | Fabi | [etapa-1-dados.md](etapa-1-dados.md) | **Núcleo pronto** (notebooks + scripts); pendências de documentação |
 | 2º | Simulação e detecção de drift | Helio | [etapa-2-drift.md](etapa-2-drift.md) | A fazer — pode começar |
 | 3º | Observabilidade de pipelines e modelos | Pedro | [etapa-3-observabilidade.md](etapa-3-observabilidade.md) | A fazer — pode começar |
-| 4º | Governança (LGPD, fairness, causalidade) e fechamento | Erick | [etapa-4-governanca.md](etapa-4-governanca.md) | Em andamento |
+| 4º | Governança (LGPD, fairness, causalidade) e fechamento | Erick | [etapa-4-governanca.md](etapa-4-governanca.md) | **Núcleo pronto** (fairness, mitigação, retenção, causal, `lgpd.md`, README); semana 4 depende da execução de referência |
 
 O vídeo STAR não está nestes handoffs.
 
@@ -32,6 +32,7 @@ make help               # todos os alvos; os das etapas 2–4 imprimem "TODO (Et
 | Logger | `logger.py` | `setup_logging()` uma vez, `get_logger(__name__)` em todo módulo; `customer_id` mascarado |
 | Dados sintéticos | `synthetic.py` + `tests/conftest.py` | `make_raw_loans` (formato do CSV) e `make_model_batch` (formato pós-prepare). Use para adiantar trabalho e nos testes |
 | Prepare | `prepare.py` | `reference.parquet`, `reference_sample.parquet`, `production_pool.parquet` |
+| Governança | `fairness.py`, `mitigation.py`, `causal.py`, `retention.py` | `fairness_by_region`/`approval_disparity` (guardrail e monitoramento), `make fairness`, `make causal`, `make purge-quarantine` |
 | Modelo | `train.py`, `registry.py`, `evaluate.py` | `load_model().score(lote)` devolve `score` e `prediction` com o threshold versionado |
 | Contrato | `data_contract.py`, `validate.py` | `validate_batch` → `ValidationResult`; `enforce` (relatório + quarentena); `make_corrupted` |
 | CI | `.github/workflows/ci.yml` | ruff + testes em todo PR e push na `main` |
@@ -65,6 +66,6 @@ make help               # todos os alvos; os das etapas 2–4 imprimem "TODO (Et
 | Evidently Referência × Produção; PSI/KS por feature | Etapa 2 | A fazer |
 | Logs e métricas centralizados; MLflow e dashboard | Etapa 3 | A fazer |
 | Métricas de saúde documentadas; alertas | Etapa 3 (catálogo) + Etapa 4 (plano consolidado) | A fazer |
-| Governança LGPD no README: PII, base legal, retenção | Etapa 4 | Em andamento |
-| Mitigação de vieses; análise causal | Etapa 2 (guardrail) + Etapa 4 | Em andamento |
+| Governança LGPD no README: PII, base legal, retenção | Etapa 4 (README seção 9, `docs/lgpd.md`) | Pronto; números finais com a execução de referência |
+| Mitigação de vieses; análise causal | Etapa 4 (`fairness.py`, `mitigation.py`, `causal.py`, README seção 10) + Etapa 2 (guardrail) | Código pronto; causal por lote depende da Etapa 2 |
 | Commits semânticos | todos | Contínuo |
