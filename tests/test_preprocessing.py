@@ -43,11 +43,7 @@ def test_build_preprocessor():
     preprocessor = build_preprocessor(X)
     transformed = preprocessor.fit_transform(X)
 
-    array = (
-        transformed.toarray()
-        if hasattr(transformed, "toarray")
-        else transformed
-    )
+    array = transformed.toarray() if hasattr(transformed, "toarray") else transformed
 
     assert np.isnan(array).sum() == 0
     assert np.isinf(array).sum() == 0

@@ -4,6 +4,7 @@ The contract validates the 23 human-readable features consumed by the fitted
 ColumnTransformer. It intentionally excludes `target`, `issue_date`, `loan_status`,
 and the already encoded 44-column matrix.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -11,24 +12,44 @@ import pandas as pd
 import pandera.pandas as pa
 from pandera import Check
 
-
 # Keep aligned with split_features_target(engineer_features(...)).
 MODEL_FEATURES = [
-    "loan_amnt", "term", "home_ownership", "annual_inc",
-    "verification_status", "purpose", "dti", "delinq_2yrs",
-    "inq_last_6mths", "open_acc", "pub_rec", "revol_bal",
-    "revol_util", "total_acc", "collections_12_mths_ex_med",
-    "acc_now_delinq", "pub_rec_bankruptcies", "tax_liens",
-    "application_type", "emp_length_years", "emp_length_missing",
-    "fico_avg", "credit_history_years",
+    "loan_amnt",
+    "term",
+    "home_ownership",
+    "annual_inc",
+    "verification_status",
+    "purpose",
+    "dti",
+    "delinq_2yrs",
+    "inq_last_6mths",
+    "open_acc",
+    "pub_rec",
+    "revol_bal",
+    "revol_util",
+    "total_acc",
+    "collections_12_mths_ex_med",
+    "acc_now_delinq",
+    "pub_rec_bankruptcies",
+    "tax_liens",
+    "application_type",
+    "emp_length_years",
+    "emp_length_missing",
+    "fico_avg",
+    "credit_history_years",
 ]
 
 NUMERIC_FEATURES = [
-    col for col in MODEL_FEATURES
-    if col not in {"home_ownership", "verification_status", "purpose", "application_type"}
+    col
+    for col in MODEL_FEATURES
+    if col
+    not in {"home_ownership", "verification_status", "purpose", "application_type"}
 ]
 CATEGORICAL_FEATURES = [
-    "home_ownership", "verification_status", "purpose", "application_type"
+    "home_ownership",
+    "verification_status",
+    "purpose",
+    "application_type",
 ]
 
 
@@ -63,25 +84,35 @@ MODEL_INPUT_SCHEMA = pa.DataFrameSchema(
         "pub_rec_bankruptcies": non_negative(),
         "tax_liens": non_negative(),
         "application_type": pa.Column(
-            str, Check.isin(["Individual", "Joint App"]),
-            nullable=False, coerce=True,
+            str,
+            Check.isin(["Individual", "Joint App"]),
+            nullable=False,
+            coerce=True,
         ),
         "emp_length_years": pa.Column(
-            float, Check.isin(list(range(-1, 11))), nullable=False, coerce=True,
+            float,
+            Check.isin(list(range(-1, 11))),
+            nullable=False,
+            coerce=True,
         ),
         "emp_length_missing": pa.Column(
-            float, Check.isin([0, 1]), nullable=False, coerce=True,
+            float,
+            Check.isin([0, 1]),
+            nullable=False,
+            coerce=True,
         ),
         "fico_avg": pa.Column(
-            float, Check.in_range(300, 850), nullable=False, coerce=True,
+            float,
+            Check.in_range(300, 850),
+            nullable=False,
+            coerce=True,
         ),
         "credit_history_years": non_negative(),
     },
     checks=[
         Check(
             lambda frame: (
-                (frame["emp_length_missing"] == 1)
-                == (frame["emp_length_years"] == -1)
+                (frame["emp_length_missing"] == 1) == (frame["emp_length_years"] == -1)
             ).all(),
             error="emp_length_missing must match emp_length_years == -1",
         ),

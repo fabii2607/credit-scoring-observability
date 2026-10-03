@@ -1,4 +1,5 @@
 """Data contract checks using synthetic rows, independent of Kaggle files."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -6,10 +7,11 @@ from pandera.errors import SchemaErrors
 
 from credit_scoring_observability.data_contract import (
     MODEL_FEATURES,
-    validate_model_input,
-    predict_proba_validated,
     predict_classes_validated,
+    predict_proba_validated,
+    validate_model_input,
 )
+
 
 def valid_row():
     return {
@@ -46,15 +48,18 @@ def test_valid_batch_passes():
     assert len(validated) == 1
 
 
-@pytest.mark.parametrize("field, value", [
-    ("loan_amnt", -500.0),
-    ("term", 48),
-    ("annual_inc", np.nan),
-    ("fico_avg", 910.0),
-    ("dti", -1.0),
-    ("emp_length_years", 15),
-    ("application_type", "Invalid App"),
-])
+@pytest.mark.parametrize(
+    "field, value",
+    [
+        ("loan_amnt", -500.0),
+        ("term", 48),
+        ("annual_inc", np.nan),
+        ("fico_avg", 910.0),
+        ("dti", -1.0),
+        ("emp_length_years", 15),
+        ("application_type", "Invalid App"),
+    ],
+)
 def test_invalid_values_are_rejected(field, value):
     row = valid_row()
     row[field] = value
@@ -85,7 +90,7 @@ def test_employment_flag_must_match_missing_code():
 
 def test_nullable_numeric_and_overlimit_revol_util_are_allowed():
     row = valid_row()
-    row["dti"] = np.nan       # pipeline will impute it
+    row["dti"] = np.nan  # pipeline will impute it
     row["revol_util"] = 112.0  # can legitimately exceed 100%
     assert len(validate_model_input(pd.DataFrame([row]))) == 1
 
@@ -93,6 +98,7 @@ def test_nullable_numeric_and_overlimit_revol_util_are_allowed():
 def test_bad_batch_never_reaches_the_model():
     class SpyModel:
         was_called = False
+
         def predict_proba(self, X):
             self.was_called = True
             return np.array([[0.8, 0.2]] * len(X))
