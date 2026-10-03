@@ -17,10 +17,23 @@ dependencies = [
     "pandas>=3.0.6",
     "pandera[pandas]>=0.33.1",
     "scikit-learn>=1.9.1",
+    # Etapa 1: parquet, parâmetros validados, .env e logs estruturados.
+    "pyarrow>=16",
+    "pyyaml>=6.0",
+    "pydantic>=2.7",
+    "python-dotenv>=1.0",
+    "structlog>=24.1",
+    # Núcleo das Etapas 2–4, só declarado aqui para evitar conflito de uv.lock
+    # entre PRs paralelos. Extras (NannyML, Great Expectations, OpenTelemetry)
+    # entram pelo PR de quem for usar.
+    "evidently>=0.7",
+    "mlflow>=3.0",
+    "prometheus-client>=0.20",
+    "psutil>=7.0",
+    "fairlearn>=0.11",
 ]
 
-# No CLI entry point is declared until a real `main()` is implemented.
-# Notebooks and Python modules are the current supported entry points.
+# Pontos de entrada: `python -m credit_scoring_observability.<módulo>` (ver Makefile).
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
@@ -28,4 +41,36 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "pytest-cov>=5.0",
+    "ruff>=0.15",
+    "pre-commit>=3.7",
 ]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+# Notebooks de estudo têm estilo exploratório; o lint protege o código em src/ e tests/.
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
+ignore = ["E501"]
+# Texto em português usa travessão e sinal de multiplicação (ex.: 2013–2014, pago × inadimplente).
+allowed-confusables = ["–", "×"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["credit_scoring_observability"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short"
+markers = ["integration: roda as CLIs de ponta a ponta (mais lento)"]
+
+[tool.coverage.run]
+source = ["credit_scoring_observability"]
+
+[tool.coverage.report]
+show_missing = true
