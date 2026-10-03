@@ -33,7 +33,7 @@ A Etapa 1 foi feita em **notebooks** pela Fabi (PR #1) e depois **consolidada em
 | Tema | Decisão |
 |---|---|
 | Split | 80/20 estratificado, `random_state=42` (notebooks 02–04). `prepare` reproduz exatamente as mesmas linhas. |
-| Referência × Produção | **Referência** = treino (1.078.479 linhas). **Pool de produção** = o teste (269.620), nunca visto no treino, de onde saem os lotes mensais. **Base do drift** = `reference_sample.parquet` (as 100 mil linhas do Reference Dataset do notebook 02). |
+| Referência × Produção | **Referência** = treino (1.078.479 linhas). **Pool de produção** = o teste (269.620), nunca visto no treino, de onde saem os lotes mensais. **Base do drift** = `reference_sample.parquet` (o Reference Dataset do notebook 02: 100 mil linhas do treino, menos 1 com renda nula que o contrato barraria = 99.999). |
 | Identificador | `customer_id` = SHA-256 de `"{sal}:{id}"`, 16 caracteres; o sal vem do `.env` (`PSEUDONYMIZATION_SALT`) e não vai para o git. O `id` original é descartado no prepare. **É pseudonimização, não anonimização.** |
 | Atributo para fairness | `region` (Northeast, Midwest, South, West) derivada de `addr_state`. Não há idade no Lending Club. **Nunca é feature.** |
 | Imputação | Feita **dentro** do pipeline do modelo (mediana nas numéricas, `"Unknown"` nas categóricas). Os parquet ficam sem imputação, e o contrato aceita nulos onde o pipeline imputa. |
@@ -47,7 +47,7 @@ A Etapa 1 foi feita em **notebooks** pela Fabi (PR #1) e depois **consolidada em
 
 | Item | Valor |
 |---|---|
-| Referência / pool / amostra de referência | 1.078.479 / 269.620 / 100.000 |
+| Referência / pool / amostra de referência | 1.078.479 / 269.620 / 99.999 |
 | Default na Referência e no pool | 19,98% / 19,98% |
 | Linhas por região (população) | South 479.503 · West 361.139 · Northeast 272.229 · Midwest 235.228 |
 | `customer_id` em comum entre Referência e pool | 0 (o `prepare` falha se houver) |

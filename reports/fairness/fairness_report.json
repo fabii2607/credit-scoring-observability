@@ -1,0 +1,106 @@
+{
+  "model_version": "V2_optimized",
+  "source": "production_pool.parquet",
+  "rows": 269620,
+  "baseline": {
+    "threshold": 0.2,
+    "n": {
+      "Midwest": 47209,
+      "Northeast": 54484,
+      "South": 95583,
+      "West": 72344
+    },
+    "approval_rate": {
+      "Midwest": 0.5908,
+      "Northeast": 0.5857,
+      "South": 0.5955,
+      "West": 0.5854
+    },
+    "tpr": {
+      "Midwest": 0.6381,
+      "Northeast": 0.6341,
+      "South": 0.6221,
+      "West": 0.6409
+    },
+    "fpr": {
+      "Midwest": 0.3523,
+      "Northeast": 0.3582,
+      "South": 0.3476,
+      "West": 0.3624
+    },
+    "default_rate": {
+      "Midwest": 0.199,
+      "Northeast": 0.2035,
+      "South": 0.2074,
+      "West": 0.1876
+    },
+    "disparate_impact": 0.983,
+    "tpr_gap": 0.0188,
+    "fpr_gap": 0.0148,
+    "passes_four_fifths": true
+  },
+  "mitigation": {
+    "method": "thresholds por grupo com paridade de FPR (determinísticos)",
+    "group_column": "region",
+    "global_threshold": 0.2,
+    "target_fpr": 0.3547,
+    "group_thresholds": {
+      "Midwest": 0.1994,
+      "Northeast": 0.2012,
+      "South": 0.1978,
+      "West": 0.2028
+    },
+    "fit_rows": 134810,
+    "holdout_rows": 134810,
+    "before": {
+      "approval_rate": 0.5906,
+      "default_rate_among_approved": 0.1253,
+      "disparate_impact": 0.9804,
+      "approval_by_group": {
+        "Midwest": 0.5912,
+        "Northeast": 0.5844,
+        "South": 0.596,
+        "West": 0.5876
+      },
+      "fpr_by_group": {
+        "Midwest": 0.3523,
+        "Northeast": 0.3581,
+        "South": 0.348,
+        "West": 0.3615
+      },
+      "tpr_by_group": {
+        "Midwest": 0.6363,
+        "Northeast": 0.6409,
+        "South": 0.618,
+        "West": 0.6329
+      },
+      "fpr_gap": 0.0135
+    },
+    "after": {
+      "approval_rate": 0.5916,
+      "default_rate_among_approved": 0.1254,
+      "disparate_impact": 0.984,
+      "approval_by_group": {
+        "Midwest": 0.5892,
+        "Northeast": 0.589,
+        "South": 0.5892,
+        "West": 0.5985
+      },
+      "fpr_by_group": {
+        "Midwest": 0.3541,
+        "Northeast": 0.3537,
+        "South": 0.355,
+        "West": 0.3504
+      },
+      "tpr_by_group": {
+        "Midwest": 0.6391,
+        "Northeast": 0.6355,
+        "South": 0.6244,
+        "West": 0.6227
+      },
+      "fpr_gap": 0.0046
+    },
+    "adopted_in_production": false,
+    "reason_not_adopted": "Usar a região na decisão é tratamento diferenciado por proxy de raça (LGPD Art. 6º, IX); a adoção depende de avaliação jurídica."
+  }
+}

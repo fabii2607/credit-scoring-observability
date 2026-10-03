@@ -177,3 +177,66 @@ Cada etapa tem um handoff autocontido em [docs/handoff/](docs/handoff/README.md)
 | 4. Governança e fechamento | [etapa-4-governanca.md](docs/handoff/etapa-4-governanca.md) |
 
 **Checklist mínimo para os próximos responsáveis:** Python/`uv` configurados (`make setup`); dataset em `data/raw/`; `make prepare && make train` executados (Referência, pool e modelo V2 com threshold); todo lote validado pelo contrato antes da inferência (`registry.load_model().score` já aplica o contrato das features); `make test` aprovado.
+
+## 9. Governança e LGPD
+
+Resumo do plano de proteção de dados; a versão completa, com inventário, princípios, RIPD e auditoria, está em [docs/lgpd.md](docs/lgpd.md).
+
+**Papéis:** a fintech é a **controladora**, a plataforma de ML é a **operadora** e há um **encarregado (DPO)** nomeado (cenário fictício).
+
+**Como a PII é tratada:**
+- **Pseudonimização** no `prepare`: o `id` do empréstimo vira `customer_id` = SHA-256 de `"{sal}:{id}"`, com 16 caracteres; o sal fica no `.env`, fora do git, e o `id` original é descartado. É pseudonimização, não anonimização: o controlador consegue refazer a associação para atender o titular, então a base continua sendo dado pessoal (Art. 13, §4º).
+- **Minimização:** só 27 das 151 colunas são lidas. Texto livre (`emp_title`, `title`, `desc`), CEP, `member_id` e `url` nunca são lidos; o estado vira região (4 grupos) e é descartado.
+- **Sem identificador fora da base:** logs com `customer_id` mascarado por padrão, relatórios de contrato com ids mascarados (`abcd***`) e métricas só agregadas. Dados preparados ficam fora do git: região + mês + valor exato ainda deixa 6,4% dos registros únicos (k = 1).
+- **Privacy by default:** a telemetria de MLflow, Evidently, GE e NannyML é desligada no `__init__.py` do pacote, antes de qualquer import.
+
+**Base legal da decisão de crédito:** **Art. 7º, X (proteção do crédito)**, com a **Lei 12.414/2011**; Art. 7º, V para os dados da proposta; **Art. 20** para a revisão de decisão automatizada (explicação pelos coeficientes da regressão logística e revisão humana perto do threshold). O consentimento **não** é a base: seria revogável e inviabilizaria a análise de risco.
+
+**Plano de retenção:**
+
+| Dado | Prazo | Aplicação |
+|---|---|---|
+| Lotes em quarentena (bloqueados pelo contrato) | 30 dias | `make purge-quarantine` (`retention.quarantine_days`) |
+| Logs (Loki) e traces (Tempo) | 90 dias | Configuração da stack (Etapa 3) |
+| Métricas (Prometheus) | 90 dias | `--storage.tsdb.retention.time=90d` (Etapa 3) |
+| Referência, pool e lotes | Enquanto o modelo estiver em uso + auditoria (referências legais: 5 anos, CDC Art. 43; 15 anos, Cadastro Positivo) | Fora do git; política do controlador |
+| Relatórios agregados | Mantidos | Sem dados de titulares |
+
+**Mitigação de vieses:** o Lending Club não tem idade, sexo nem raça; o atributo auditado é a **região**, proxy de raça e renda nos EUA. Ela **não é feature** do modelo e é medida com fairlearn (`make fairness`). No pool de produção, com o modelo V2:
+
+| Região | Aprovação | FPR (bons pagadores negados) | TPR | Default observado |
+|---|---|---|---|---|
+| Midwest | 59,1% | 35,2% | 63,8% | 19,9% |
+| Northeast | 58,6% | 35,8% | 63,4% | 20,4% |
+| South | 59,6% | 34,8% | 62,2% | 20,7% |
+| West | 58,5% | 36,2% | 64,1% | 18,8% |
+
+Razão de impacto desigual **0,983** (regra dos 4/5: 0,8). A mitigação por thresholds por região com paridade de FPR foi **avaliada e não adotada**:
+- os thresholds ficariam entre 0,198 e 0,203, quase iguais ao global;
+- a diferença de FPR cairia de 1,4 para 0,5 p.p.;
+- usar a região na decisão seria tratamento diferenciado por proxy de raça (Art. 6º, IX).
+
+O que se adota é a região fora do modelo, a medição por lote, o guardrail no retreino (um challenger não pode piorar a razão em mais de 0,05) e a revisão humana.
+
+## 10. Análise causal
+
+```mermaid
+flowchart LR
+    macro[Choque macro: inflação] --> renda[Renda real ↓]
+    renda --> dti[dti ↑]
+    macro --> util[Utilização do rotativo ↑]
+    perfis[Novos perfis de cliente] --> fico[FICO ↓]
+    dti --> default[Default]
+    util --> default
+    fico --> default
+    reneg[Renegociação / aperto de renda] -. muda P de default dado X .-> default
+```
+
+As setas cheias mudam **quem chega** (covariate shift); a tracejada muda **o que acontece com o mesmo perfil** (concept drift). Para separar os dois, `make causal` faz uma **intervenção por grupo de variáveis ligadas**: renda + dti, rotativo e FICO. A distribuição do lote é substituída pela da Referência, preservando a ordem dentro do lote, e mede-se quanto o score e a AUC voltam ao normal.
+
+| Sinal | Diagnóstico | Ação |
+|---|---|---|
+| Score muda (PSI > 0,10), AUC estável, restaurar X devolve o score | **Covariate shift** | Monitorar/recalibrar, sem retreino |
+| AUC cai > 0,05 e restaurar X não recupera | **Concept drift** | Retreinar com dados recentes |
+
+O método foi validado com o modelo V2 real: num lote com renda, dti, rotativo e FICO deslocados, restaurar os grupos recuperou 99,6% do desvio do score (84% só com renda + dti); num lote com rótulos trocados por segmento, a AUC caiu de 0,69 para 0,53 com PSI ≈ 0, e o diagnóstico foi concept drift. *Os números dos lotes M1–M7 entram com a execução de referência (Etapas 2 e 3).* **Limite:** isto mede a sensibilidade do modelo sob as hipóteses do DAG; não prova a causa no mundo real.
