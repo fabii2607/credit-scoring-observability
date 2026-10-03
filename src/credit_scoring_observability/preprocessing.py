@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
@@ -65,19 +66,25 @@ EMP_LENGTH_MAP = {
 def load_modeling_data(
     data_path: str | Path,
     chunksize: int = 100_000,
+    extra_columns: Sequence[str] = (),
 ) -> pd.DataFrame:
-    """Load only baseline columns and loans with a known final outcome."""
+    """Load only baseline columns and loans with a known final outcome.
+
+    `extra_columns` reads metadata that is not a feature (e.g. `id`, `addr_state`)
+    as text, without changing which rows are kept or their order.
+    """
     data_path = Path(data_path)
 
     if not data_path.exists():
         raise FileNotFoundError(f"Dataset not found: {data_path.resolve()}")
 
-    cols_to_load = [*BASELINE_FEATURES, "loan_status", "issue_d"]
+    cols_to_load = [*BASELINE_FEATURES, "loan_status", "issue_d", *extra_columns]
     chunks: list[pd.DataFrame] = []
 
     for chunk in pd.read_csv(
         data_path,
         usecols=cols_to_load,
+        dtype=dict.fromkeys(extra_columns, "string"),
         chunksize=chunksize,
         low_memory=False,
     ):
