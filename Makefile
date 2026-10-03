@@ -50,14 +50,14 @@ monitor: ## Run the batch pipeline for every simulated month
 	@echo "TODO (Etapa 3): ver docs/handoff/etapa-3-observabilidade.md"
 
 # ── Etapa 4: governança ──────────────────────────────────────────────────────
-fairness: ## Fairness by region and threshold mitigation report
-	@echo "TODO (Etapa 4): ver docs/handoff/etapa-4-governanca.md"
+fairness: ## Fairness by region on the production pool + mitigation evaluation (not adopted)
+	uv run python -m $(PKG).mitigation
 
-causal: ## Causal attribution of the drift (interventions by variable group)
-	@echo "TODO (Etapa 4): ver docs/handoff/etapa-4-governanca.md"
+causal: ## Causal attribution of the drift (needs the batches from make simulate)
+	uv run python -m $(PKG).causal
 
 purge-quarantine: ## Delete quarantined batches older than the retention period (LGPD)
-	@echo "TODO (Etapa 4): ver docs/handoff/etapa-4-governanca.md"
+	uv run python -m $(PKG).retention
 
 clean: ## Remove caches
 	uv run python -c "import shutil, pathlib; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('__pycache__')]; shutil.rmtree('.pytest_cache', ignore_errors=True); shutil.rmtree('.ruff_cache', ignore_errors=True)"
