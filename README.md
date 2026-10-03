@@ -4,7 +4,7 @@
 
 Projeto acadêmico de classificação binária de risco de crédito, qualidade de dados e preparação para monitoramento de modelos. A base é o **All Lending Club Loan Data**. A frente documentada aqui implementa EDA, engenharia e preparação de features, Regressão Logística baseline (V1), otimização experimental (V2), contrato de entrada com Pandera e demonstração do bloqueio de um lote inválido (*bad batch*).
 
-> **Estado da integração:** os testes automatizados locais da frente de dados/modelagem passaram (16 testes, conforme última execução do grupo). As etapas de observabilidade, drift e demais integrações do Tech Challenge pertencem à sequência do projeto e não são declaradas prontas neste README.
+> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks **e** em scripts (`make prepare`, `make train`, `make demo-contract`), com CI rodando lint e testes em dados sintéticos. As Etapas 2 (drift), 3 (observabilidade) e 4 (governança) estão em andamento; o estado de cada uma e como continuar estão em [docs/handoff/](docs/handoff/README.md).
 
 ## 1. Dataset e definição do problema
 
@@ -16,7 +16,7 @@ Baixe o arquivo **`accepted_2007_to_2018Q4.csv`** e coloque-o em:
 data/raw/accepted_2007_to_2018Q4.csv
 ```
 
-A pasta `data/` é ignorada pelo Git: nenhum CSV bruto ou gerado é distribuído diretamente neste repositório. Cada integrante deve obter sua cópia pela fonte indicada. Se o download vier compactado, extraia o `.csv` antes de rodar os notebooks.
+A pasta `data/` é ignorada pelo Git: nenhum CSV bruto ou gerado é distribuído diretamente neste repositório. Cada integrante deve obter sua cópia pela fonte indicada. Se o download vier compactado, extraia o `.csv` antes de rodar os notebooks (os scripts `make prepare` aceitam também o `.csv.gz`).
 
 O arquivo de empréstimos aceitos tem aproximadamente **2.260.701 registros e 151 colunas**. A população de modelagem tem **1.348.099 empréstimos** com desfecho conhecido e usa o seguinte target:
 
@@ -35,7 +35,17 @@ O arquivo de empréstimos aceitos tem aproximadamente **2.260.701 registros e 15
 
 ```powershell
 uv sync
-uv run pytest -v
+make setup     # pre-commit + .env a partir do .env.example (defina PSEUDONYMIZATION_SALT)
+make test      # testes com dados sintéticos, sem o CSV do Kaggle
+```
+
+Reprodução da Etapa 1 por scripts, sem abrir notebook (mesmos números dos notebooks 02–04):
+
+```powershell
+make prepare        # Referência (treino) × pool de produção (teste), pseudonimizados (~25 s)
+make train          # modelo V2 + threshold em models/ (~1 min)
+make demo-contract  # lote corrompido bloqueado pelo contrato: exit 2 + quarentena
+make help           # todos os alvos (os das Etapas 2–4 indicam o handoff)
 ```
 
 O `uv sync` utiliza `pyproject.toml` e `uv.lock`. Para notebooks no VS Code, selecione o interpretador/kernel **`.venv/Scripts/python.exe`**. Se necessário, abra a pasta `notebooks/` e confirme que `Path('../data/raw/accepted_2007_to_2018Q4.csv').exists()` retorna `True` antes da leitura.
@@ -47,33 +57,31 @@ O `uv sync` utiliza `pyproject.toml` e `uv.lock`. Para notebooks no VS Code, sel
 ```text
 credit-scoring-observability/
 ├── data/                              # arquivos locais; não versionados
-│   ├── raw/
-│   ├── reference/
-│   ├── processed/
-│   └── invalid/
-├── models/                            # artefatos produzidos localmente
-├── notebooks/
-│   ├── 01_eda.ipynb
-│   ├── 02_preprocessing.ipynb
-│   ├── 03_baseline_model.ipynb
-│   ├── 04_model_optimization.ipynb
-│   └── 05_data_contract.ipynb
+│   ├── raw/                           # CSV do Kaggle
+│   ├── processed/                     # reference, reference_sample, production_pool (.parquet)
+│   ├── production/                    # lotes mensais (Etapa 2) e o lote corrompido da demo
+│   └── quarantine/                    # lotes bloqueados pelo contrato
+├── models/                            # modelo (.joblib, local) e metadados/métricas (.json)
+├── notebooks/                         # 01_eda … 05_data_contract
+├── reports/contracts/                 # relatório JSON de cada lote validado (local)
 ├── src/credit_scoring_observability/
-│   ├── __init__.py
-│   ├── preprocessing.py
-│   └── data_contract.py
-├── tests/
-│   ├── test_preprocessing.py
-│   └── test_data_contract.py
+│   ├── config.py · parameters.py      # caminhos, colunas e params.yaml validado
+│   ├── logger.py                      # logs estruturados, customer_id mascarado
+│   ├── preprocessing.py               # população, target, features derivadas, split
+│   ├── prepare.py                     # Referência × pool, pseudonimização, região
+│   ├── train.py · evaluate.py         # treino da V2, métricas e seleção de threshold
+│   ├── registry.py                    # load_model(): pipeline + threshold versionado
+│   ├── data_contract.py · validate.py # contrato Pandera, CLI de validação, quarentena
+│   └── synthetic.py                   # dados sintéticos para testes e protótipos
+├── tests/                             # pytest, só com dados sintéticos
 ├── docs/
-│   └── HANDOFF_FABI.md
-├── .gitignore
-├── .python-version
-├── pyproject.toml
-└── uv.lock
+│   ├── handoff/                       # como cada etapa continua (fonte de verdade)
+│   └── guias/                         # guias do projeto anterior (referência conceitual)
+├── .github/workflows/ci.yml           # lint + testes
+├── Makefile · params.yaml · pyproject.toml · uv.lock
 ```
 
-As pastas locais sob `data/` são criadas pelos notebooks conforme necessário. Os diretórios `models/` e `docs/` podem conter também arquivos criados por outras frentes do projeto.
+As pastas locais sob `data/` são criadas pelos notebooks e pelos scripts conforme necessário. Os diretórios `models/` e `docs/` podem conter também arquivos criados por outras frentes do projeto.
 
 ## 4. Ordem de execução dos notebooks
 
@@ -104,7 +112,7 @@ A V1 utiliza threshold de classificação de 0,50. Na execução registrada da V
 
 A comparação V1 × V2 mostrou, aproximadamente, Recall de **4,5%** na V1 e **63,5%** na V2, acompanhado de queda de Precision. ROC-AUC permaneceu perto de **0,694** e Average Precision perto de **0,357**. São resultados experimentais; os valores exatos devem ser lidos dos JSONs e gráficos gerados nos notebooks. Seleção de modelo/threshold foi feita na validação, não no teste final.
 
-**Compartilhamento importante:** `.joblib` e `.pkl` estão no `.gitignore` e **não aparecem ao clonar o GitHub**. Para executar a inferência sem retreinar, cada colega deve receber ambos os arquivos da V2 (`credit_scoring_optimized.joblib` e `credit_scoring_optimized_metadata.json`) por um canal aprovado pelo grupo, por exemplo uma Release do repositório ou armazenamento compartilhado. O JSON de metadados sozinho **não contém o modelo**. Como alternativa, execute os notebooks 03 e 04, usando o mesmo dataset, código e `uv.lock`. Carregue arquivos `joblib` apenas de origem confiável.
+**Compartilhamento importante:** `.joblib` e `.pkl` estão no `.gitignore` e **não aparecem ao clonar o GitHub**. Para executar a inferência sem retreinar, cada colega deve receber ambos os arquivos da V2 (`credit_scoring_optimized.joblib` e `credit_scoring_optimized_metadata.json`) por um canal aprovado pelo grupo, por exemplo uma Release do repositório ou armazenamento compartilhado. O JSON de metadados sozinho **não contém o modelo**. Como alternativa, rode `make prepare && make train` (≈ 1,5 min), que reproduz a V2 com as mesmas métricas do notebook 04, ou execute os notebooks 03 e 04, usando o mesmo dataset, código e `uv.lock`. Carregue arquivos `joblib` apenas de origem confiável.
 
 ## 6. Contrato de entrada e inferência validada
 
@@ -143,21 +151,29 @@ O gate `predict_proba_validated()` valida uma cópia profunda do lote antes de i
 
 ## 7. Bad Batch e testes automatizados
 
+**Script de validação operante:** `make validate BATCH=<arquivo.parquet|csv>` valida um lote; `make demo-contract` gera `data/production/corrupted.parquet` a partir do pool e o valida. Lote bloqueado sai com **exit 2**, vai para `data/quarantine/` e gera `reports/contracts/<lote>.json` com cada regra violada (camada, severidade, contagem) e exemplos com o `customer_id` mascarado. Além do contrato das features, o script aplica regras de lote: volume mínimo, cliente reenviado (`customer_id` duplicado), colunas inesperadas como `loan_status` (vazamento) e target binário.
+
 O notebook 05 cria localmente `data/invalid/bad_batch.csv`, alterando campos como valor negativo de `loan_amnt`, prazo inválido, renda ausente, FICO fora da faixa e incoerência no indicador de tempo de emprego. Sua execução demonstra tanto as mensagens do Pandera quanto a ausência de chamada ao modelo quando a validação falha.
 
 Na raiz do repositório:
 
 ```powershell
-uv run pytest -v
+make test   # ou: uv run pytest -v
 # testes específicos, caso necessário:
-uv run pytest tests/test_preprocessing.py -v
-uv run pytest tests/test_data_contract.py -v
+uv run pytest tests/test_data_contract.py tests/test_validate.py -v
 ```
 
-**Última execução informada pela equipe:** 16 testes aprovados (14 do contrato e 2 de pré-processamento). Reexecute após atualizar arquivos ou dependências.
+Os testes usam só dados sintéticos (`synthetic.py`), então rodam no CI sem o CSV do Kaggle. O CI (`.github/workflows/ci.yml`) roda `ruff` e `pytest` em todo PR.
 
-## 8. Handoff para a frente de observabilidade
+## 8. Como continuar: handoffs por etapa
 
-Consulte [docs/HANDOFF_FABI.md](docs/HANDOFF_FABI.md) para obter entradas, saídas, ordem de reprodução, contrato das 23 features, artefatos não versionados e cuidados para integrar drift/monitoramento.
+Cada etapa tem um handoff autocontido em [docs/handoff/](docs/handoff/README.md), com o que já existe, as decisões tomadas, as interfaces combinadas (assinaturas e nomes de métricas), o checklist de pronto e as armadilhas:
 
-**Checklist mínimo para os próximos responsáveis:** Python/`uv` configurados; dataset local quando necessário; `reference_dataset.csv` disponível; modelo V2 **e** metadados/threshold disponíveis; lote de produção com as mesmas 23 features; validação Pandera executada antes de toda inferência; `uv run pytest -v` aprovado.
+| Etapa | Handoff |
+|---|---|
+| 1. Validação de dados e contratos | [etapa-1-dados.md](docs/handoff/etapa-1-dados.md) |
+| 2. Simulação e detecção de drift | [etapa-2-drift.md](docs/handoff/etapa-2-drift.md) |
+| 3. Observabilidade | [etapa-3-observabilidade.md](docs/handoff/etapa-3-observabilidade.md) |
+| 4. Governança e fechamento | [etapa-4-governanca.md](docs/handoff/etapa-4-governanca.md) |
+
+**Checklist mínimo para os próximos responsáveis:** Python/`uv` configurados (`make setup`); dataset em `data/raw/`; `make prepare && make train` executados (Referência, pool e modelo V2 com threshold); todo lote validado pelo contrato antes da inferência (`registry.load_model().score` já aplica o contrato das features); `make test` aprovado.
