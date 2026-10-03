@@ -35,6 +35,13 @@
     "fico_avg",
     "credit_history_years"
   ],
+  "validation_metrics": {
+    "precision": 0.3105607627666451,
+    "recall": 0.6412245578912246,
+    "f1": 0.41845400108873165,
+    "f2": 0.5286504181338029,
+    "predicted_positive_rate": 0.4125333333333333
+  },
   "metrics_on_test": {
     "accuracy": 0.6427675988428159,
     "precision": 0.3080297781114599,
@@ -43,8 +50,13 @@
     "f2": 0.5222228015666838,
     "roc_auc": 0.6936382097038278,
     "pr_auc": 0.3569228190275872,
+    "ks": 0.2784754045600033,
+    "brier": 0.1473613679409027,
+    "approval_rate": 0.5899747793190416,
     "threshold": 0.2
   },
+  "test_set": "production_pool (teste reservado da Etapa 1)",
   "convergence_warning": false,
-  "usage_note": "Use predict_proba(X)[:,1] >= decision_threshold; pipeline.predict uses threshold 0.5."
+  "trained_at": "2026-10-03T13:41:07+00:00",
+  "usage_note": "Use registry.load_model(): aplica o contrato e o decision_threshold. pipeline.predict usa threshold 0.5."
 }
