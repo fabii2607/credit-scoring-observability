@@ -29,3 +29,7 @@ models/*.joblib
 *.log
 .DS_Store
 Thumbs.db
+
+# Saídas geradas localmente (relatórios de contrato, logs do pipeline)
+reports/contracts/
+logs/
