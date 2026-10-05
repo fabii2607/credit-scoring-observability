@@ -237,7 +237,9 @@ def save(prepared: PreparedData, output_dir: Path = PROCESSED_DIR) -> dict[str, 
     prepared.reference_sample.to_parquet(paths["reference_sample"], index=False)
     prepared.production_pool.to_parquet(paths["production_pool"], index=False)
     paths["report"].write_text(
-        json.dumps(prepared.report, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(prepared.report, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+        newline="\n",  # LF também no Windows: sem diff falso no git
     )
     return paths
 

@@ -274,7 +274,9 @@ def enforce(
     report_dir.mkdir(parents=True, exist_ok=True)
     report_path = report_dir / f"{result.batch_id}.json"
     report_path.write_text(
-        json.dumps(result.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(result.to_dict(), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+        newline="\n",  # LF também no Windows: sem diff falso no git
     )
     if result.passed:
         logger.info(

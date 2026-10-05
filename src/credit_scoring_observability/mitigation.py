@@ -142,7 +142,11 @@ def main(pool_path: Path = PRODUCTION_POOL_FILE, output: Path = FAIRNESS_REPORT)
         **fairness_report(scored, model.threshold, source=pool_path.name),
     }
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2, ensure_ascii=False), "utf-8")
+    output.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+        newline="\n",
+    )
     base, mit = report["baseline"], report["mitigation"]
     logger.info(
         "fairness por região",
