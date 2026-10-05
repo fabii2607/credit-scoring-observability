@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import time
 import warnings
-from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -172,7 +171,6 @@ def train(
         "metrics_on_test": metrics,
         "test_set": "production_pool (teste reservado da Etapa 1)",
         "convergence_warning": converged_with_warning,
-        "trained_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "usage_note": (
             "Use registry.load_model(): aplica o contrato e o decision_threshold. "
             "pipeline.predict usa threshold 0.5."

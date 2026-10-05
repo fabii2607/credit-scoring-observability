@@ -78,12 +78,22 @@ REGIONS = list(_REGIONS)
 
 
 def raw_file() -> Path:
-    """Caminho do CSV bruto do Kaggle (aceita o .csv ou o .csv.gz baixado)."""
-    for name in RAW_FILE_NAMES:
-        path = RAW_DIR / name
-        if path.exists():
-            return path
+    """Caminho do CSV bruto do Kaggle (aceita o .csv ou o .csv.gz baixado).
+
+    Procura em `data/raw/` e nas subpastas: o zip do Kaggle cria a pasta
+    `accepted_2007_to_2018q4.csv/` com o `.csv.gz` dentro. Só arquivos contam
+    (no Windows, a pasta tem o mesmo nome do CSV, sem diferenciar maiúsculas).
+    """
+    wanted = [name.lower() for name in RAW_FILE_NAMES]
+    found = sorted(
+        (wanted.index(p.name.lower()), len(p.parts), p)
+        for p in RAW_DIR.rglob("*")
+        if p.is_file() and p.name.lower() in wanted
+    )
+    if found:
+        return found[0][2]
     raise FileNotFoundError(
-        f"Dataset não encontrado em {RAW_DIR}. Baixe accepted_2007_to_2018Q4.csv "
-        "(Kaggle: wordsforthewise/lending-club) e coloque em data/raw/."
+        f"Dataset não encontrado em {RAW_DIR}. Baixe o dataset do Kaggle "
+        "(wordsforthewise/lending-club), descompacte e deixe o arquivo "
+        "accepted_2007_to_2018Q4.csv (ou .csv.gz) em data/raw/ ou numa subpasta."
     )
