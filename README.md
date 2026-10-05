@@ -16,7 +16,7 @@ Baixe o arquivo **`accepted_2007_to_2018Q4.csv`** e coloque-o em:
 data/raw/accepted_2007_to_2018Q4.csv
 ```
 
-A pasta `data/` é ignorada pelo Git: nenhum CSV bruto ou gerado é distribuído diretamente neste repositório. Cada integrante deve obter sua cópia pela fonte indicada. Se o download vier compactado, extraia o `.csv` antes de rodar os notebooks (os scripts `make prepare` aceitam também o `.csv.gz`).
+A pasta `data/` é ignorada pelo Git: nenhum CSV bruto ou gerado é distribuído diretamente neste repositório. Cada integrante deve obter sua cópia pela fonte indicada. Se o download vier compactado, extraia o `.csv` antes de rodar os notebooks. Os scripts (`make prepare`) aceitam também o `.csv.gz` e a pasta que o zip do Kaggle cria (`data/raw/accepted_2007_to_2018q4.csv/accepted_2007_to_2018Q4.csv.gz`).
 
 O arquivo de empréstimos aceitos tem aproximadamente **2.260.701 registros e 151 colunas**. A população de modelagem tem **1.348.099 empréstimos** com desfecho conhecido e usa o seguinte target:
 
@@ -47,6 +47,21 @@ make train          # modelo V2 + threshold em models/ (~1 min)
 make demo-contract  # lote corrompido bloqueado pelo contrato: exit 2 + quarentena
 make help           # todos os alvos (os das Etapas 2 e 3 ainda imprimem TODO)
 ```
+
+**Sem `make`** (comum no Windows), os mesmos alvos rodam direto com o `uv`:
+
+| Alvo | Comando equivalente |
+|---|---|
+| `make setup` | `uv sync`, `uv run pre-commit install` e copiar `.env.example` para `.env` |
+| `make lint` | `uv run ruff check .` e `uv run ruff format --check .` |
+| `make test` | `uv run pytest` |
+| `make prepare` | `uv run python -m credit_scoring_observability.prepare` |
+| `make train` | `uv run python -m credit_scoring_observability.train` |
+| `make validate BATCH=<arquivo>` | `uv run python -m credit_scoring_observability.validate --batch <arquivo>` |
+| `make demo-contract` | `uv run python -m credit_scoring_observability.validate --demo-corrupted` |
+| `make fairness` | `uv run python -m credit_scoring_observability.mitigation` |
+| `make causal` | `uv run python -m credit_scoring_observability.causal` |
+| `make purge-quarantine` | `uv run python -m credit_scoring_observability.retention` |
 
 O `uv sync` utiliza `pyproject.toml` e `uv.lock`. Para notebooks no VS Code, selecione o interpretador/kernel **`.venv/Scripts/python.exe`**. Se necessário, abra a pasta `notebooks/` e confirme que `Path('../data/raw/accepted_2007_to_2018Q4.csv').exists()` retorna `True` antes da leitura.
 

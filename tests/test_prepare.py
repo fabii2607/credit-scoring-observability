@@ -145,3 +145,22 @@ def test_reference_sample_only_keeps_contract_valid_rows(loans):
     validate_model_input(sample.loc[:, MODEL_FEATURES])
     # O treino mantém as linhas com renda nula (o pipeline imputa).
     assert prepared.reference["annual_inc"].isna().any()
+
+
+def test_raw_file_finds_kaggle_zip_layout(tmp_path, monkeypatch):
+    from credit_scoring_observability import config
+
+    monkeypatch.setattr(config, "RAW_DIR", tmp_path)
+    with pytest.raises(FileNotFoundError, match="Kaggle"):
+        config.raw_file()
+    # O zip do Kaggle cria uma PASTA com o nome do CSV e o .gz dentro.
+    folder = tmp_path / "accepted_2007_to_2018q4.csv"
+    folder.mkdir()
+    gz = folder / "accepted_2007_to_2018Q4.csv.gz"
+    gz.write_bytes(b"")
+    assert config.raw_file() == gz
+    # Um .csv descompactado tem prioridade sobre o .gz.
+    csv = tmp_path / "data" / "accepted_2007_to_2018Q4.csv"
+    csv.parent.mkdir()
+    csv.write_text("x")
+    assert config.raw_file() == csv

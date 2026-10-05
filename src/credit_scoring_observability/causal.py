@@ -253,7 +253,11 @@ def run(batch_ids: list[str] | None = None, output: Path = CAUSAL_REPORT) -> dic
         ],
     }
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2, ensure_ascii=False), "utf-8")
+    output.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+        newline="\n",
+    )
     for batch in report["batches"]:
         logger.info(
             "atribuição causal",

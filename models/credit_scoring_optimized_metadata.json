@@ -57,6 +57,5 @@
   },
   "test_set": "production_pool (teste reservado da Etapa 1)",
   "convergence_warning": false,
-  "trained_at": "2026-10-03T13:41:07+00:00",
   "usage_note": "Use registry.load_model(): aplica o contrato e o decision_threshold. pipeline.predict usa threshold 0.5."
 }

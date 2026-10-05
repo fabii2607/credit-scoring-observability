@@ -79,7 +79,9 @@ def save_model(
     model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(pipeline, model_path)
     metadata_path.write_text(
-        json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(metadata, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+        newline="\n",  # LF também no Windows: sem diff falso no git
     )
 
 
