@@ -1,6 +1,6 @@
 # Guias por etapa
 
-> **Atenção:** estes guias foram escritos para o dataset Give Me Some Credit, num projeto anterior, e ficam aqui como **referência conceitual** (o porquê das decisões, as aulas e as armadilhas). Para este repositório (Lending Club), a fonte de verdade são os handoffs em [`docs/handoff/`](../handoff/README.md), que descrevem o código real.
+> **Atenção:** estes guias foram escritos para o dataset Give Me Some Credit, num projeto anterior, e ficam aqui como **referência conceitual** (o porquê das decisões, as aulas e as armadilhas). Para este repositório (Lending Club), vale o que está no código e no [README](../../README.md): nomes de colunas, atributo de fairness (região, não idade) e modelo (regressão logística V2) são diferentes.
 
 Um guia por integrante, para replicar o projeto do zero seguindo as etapas do Tech Challenge. Cada guia é **autocontido**: dá para colar o arquivo inteiro numa LLM (Claude, Gemini, GPT...) como contexto e trabalhar a partir dele.
 

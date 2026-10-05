@@ -43,11 +43,11 @@ demo-contract: ## Push a corrupted batch through the data contract (expected to 
 
 # ── Etapa 2: simulação e drift ───────────────────────────────────────────────
 simulate: ## Generate the monthly production batches M1–M7 from the pool
-	@echo "TODO (Etapa 2): ver docs/handoff/etapa-2-drift.md"
+	@echo "TODO (Etapa 2)"
 
 # ── Etapa 3: observabilidade ─────────────────────────────────────────────────
 monitor: ## Run the batch pipeline for every simulated month
-	@echo "TODO (Etapa 3): ver docs/handoff/etapa-3-observabilidade.md"
+	@echo "TODO (Etapa 3)"
 
 # ── Etapa 4: governança ──────────────────────────────────────────────────────
 fairness: ## Fairness by region on the production pool + mitigation evaluation (not adopted)

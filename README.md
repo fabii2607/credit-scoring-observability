@@ -4,7 +4,7 @@
 
 Projeto acadêmico de classificação binária de risco de crédito, qualidade de dados e preparação para monitoramento de modelos. A base é o **All Lending Club Loan Data**. A frente documentada aqui implementa EDA, engenharia e preparação de features, Regressão Logística baseline (V1), otimização experimental (V2), contrato de entrada com Pandera e demonstração do bloqueio de um lote inválido (*bad batch*).
 
-> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks **e** em scripts (`make prepare`, `make train`, `make demo-contract`), com CI rodando lint e testes em dados sintéticos. As Etapas 2 (drift), 3 (observabilidade) e 4 (governança) estão em andamento; o estado de cada uma e como continuar estão em [docs/handoff/](docs/handoff/README.md).
+> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks **e** em scripts (`make prepare`, `make train`, `make demo-contract`), com CI rodando lint e testes em dados sintéticos. As Etapas 2 (drift), 3 (observabilidade) e 4 (governança) estão em andamento.
 
 ## 1. Dataset e definição do problema
 
@@ -45,7 +45,7 @@ Reprodução da Etapa 1 por scripts, sem abrir notebook (mesmos números dos not
 make prepare        # Referência (treino) × pool de produção (teste), pseudonimizados (~25 s)
 make train          # modelo V2 + threshold em models/ (~1 min)
 make demo-contract  # lote corrompido bloqueado pelo contrato: exit 2 + quarentena
-make help           # todos os alvos (os das Etapas 2–4 indicam o handoff)
+make help           # todos os alvos (os das Etapas 2 e 3 ainda imprimem TODO)
 ```
 
 O `uv sync` utiliza `pyproject.toml` e `uv.lock`. Para notebooks no VS Code, selecione o interpretador/kernel **`.venv/Scripts/python.exe`**. Se necessário, abra a pasta `notebooks/` e confirme que `Path('../data/raw/accepted_2007_to_2018Q4.csv').exists()` retorna `True` antes da leitura.
@@ -75,7 +75,6 @@ credit-scoring-observability/
 │   └── synthetic.py                   # dados sintéticos para testes e protótipos
 ├── tests/                             # pytest, só com dados sintéticos
 ├── docs/
-│   ├── handoff/                       # como cada etapa continua (fonte de verdade)
 │   └── guias/                         # guias do projeto anterior (referência conceitual)
 ├── .github/workflows/ci.yml           # lint + testes
 ├── Makefile · params.yaml · pyproject.toml · uv.lock
@@ -165,16 +164,7 @@ uv run pytest tests/test_data_contract.py tests/test_validate.py -v
 
 Os testes usam só dados sintéticos (`synthetic.py`), então rodam no CI sem o CSV do Kaggle. O CI (`.github/workflows/ci.yml`) roda `ruff` e `pytest` em todo PR.
 
-## 8. Como continuar: handoffs por etapa
-
-Cada etapa tem um handoff autocontido em [docs/handoff/](docs/handoff/README.md), com o que já existe, as decisões tomadas, as interfaces combinadas (assinaturas e nomes de métricas), o checklist de pronto e as armadilhas:
-
-| Etapa | Handoff |
-|---|---|
-| 1. Validação de dados e contratos | [etapa-1-dados.md](docs/handoff/etapa-1-dados.md) |
-| 2. Simulação e detecção de drift | [etapa-2-drift.md](docs/handoff/etapa-2-drift.md) |
-| 3. Observabilidade | [etapa-3-observabilidade.md](docs/handoff/etapa-3-observabilidade.md) |
-| 4. Governança e fechamento | [etapa-4-governanca.md](docs/handoff/etapa-4-governanca.md) |
+## 8. Como continuar
 
 **Checklist mínimo para os próximos responsáveis:** Python/`uv` configurados (`make setup`); dataset em `data/raw/`; `make prepare && make train` executados (Referência, pool e modelo V2 com threshold); todo lote validado pelo contrato antes da inferência (`registry.load_model().score` já aplica o contrato das features); `make test` aprovado.
 

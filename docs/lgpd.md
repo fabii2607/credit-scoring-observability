@@ -78,7 +78,7 @@ Uso do dataset: dados públicos do Kaggle; o arquivo não é redistribuído pelo
 | **Necessidade** (minimização) | 27 das 151 colunas lidas; texto livre, CEP, `member_id` e `url` nunca lidos; estado reduzido a região; `customer_id` fora do modelo |
 | **Livre acesso** | O titular pode consultar os dados e o score (item 6) |
 | **Qualidade dos dados** | Contrato Pandera + regras de lote; lote inválido vai para a quarentena e não é pontuado (`make demo-contract`) |
-| **Transparência** | Model card, coeficientes da regressão logística, notebooks de estudo, handoffs, este documento |
+| **Transparência** | Model card, coeficientes da regressão logística, notebooks de estudo, este documento |
 | **Segurança** | Sal fora do repositório; dados fora do git; logs e relatórios sem identificadores |
 | **Prevenção** | Monitoramento de drift e performance evita decisões erradas em série (degradação silenciosa) |
 | **Não discriminação** | Região fora do modelo; aprovação por região medida, com alerta e **guardrail** de promoção (item 8) |
