@@ -1,0 +1,19 @@
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+        grpc:
+
+compactor:
+  compaction:
+    block_retention: 2160h # Retenção de 90 dias exigida
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo/blocks

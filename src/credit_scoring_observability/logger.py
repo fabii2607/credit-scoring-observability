@@ -32,10 +32,20 @@ import sys
 from pathlib import Path
 
 import structlog
+from opentelemetry import trace
 
 _CONFIGURED = False
 
 IDENTIFIER_FIELDS = {"customer_id", "customer_ids", "id"}
+
+
+def inject_trace_info(_, __, event_dict: dict) -> dict:
+    """Injeta o trace_id do OpenTelemetry se houver um span ativo."""
+    span = trace.get_current_span()
+    if span.is_recording():
+        ctx = span.get_span_context()
+        event_dict["trace_id"] = format(ctx.trace_id, "032x")
+    return event_dict
 
 
 def redact_identifiers(_, __, event_dict: dict) -> dict:
@@ -64,6 +74,7 @@ def build_processors(json_logs: bool, log_file: Path | None) -> list:
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
+        inject_trace_info,  # <--- Injeta o trace_id
         redact_identifiers,
     ]
     if log_file is not None:
