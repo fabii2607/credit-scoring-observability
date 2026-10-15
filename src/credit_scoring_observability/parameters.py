@@ -6,9 +6,11 @@ Cada etapa acrescenta a sua seção como um modelo pydantic e um campo em
 
 from __future__ import annotations
 
+from datetime import datetime
 from functools import lru_cache
+from itertools import pairwise
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 import numpy as np
 import yaml
@@ -63,11 +65,96 @@ class RetentionParams(ParamsModel):
     quarantine_days: int = Field(gt=0)
 
 
+Intensity = Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
+
+
+class SimulationParams(ParamsModel):
+    """Sorteios e intervenções; independentes do split/treino da Etapa 1."""
+
+    seed: int = Field(default=42, ge=0, strict=True)
+    batch_rows: int = Field(default=10_000, ge=500, strict=True)
+    control_rows: int = Field(default=30_000, ge=500, strict=True)
+    calibration_rows: int = Field(default=10_000, ge=500, strict=True)
+    months: tuple[str, ...] = (
+        "2026-01",
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+    )
+    data_intensities: tuple[Intensity, Intensity] = (0.6, 1.0)
+    concept_intensities: tuple[Intensity, Intensity, Intensity] = (0.35, 0.55, 0.75)
+
+    @model_validator(mode="after")
+    def validate_timeline(self) -> SimulationParams:
+        if len(self.months) != 7 or len(set(self.months)) != 7:
+            raise ValueError("São necessários sete meses distintos")
+        for month in self.months:
+            parsed = datetime.strptime(month, "%Y-%m")
+            if parsed.strftime("%Y-%m") != month:
+                raise ValueError("Meses devem usar YYYY-MM")
+        ordinals = [int(m[:4]) * 12 + int(m[5:]) for m in self.months]
+        if any(b - a != 1 for a, b in pairwise(ordinals)):
+            raise ValueError("Meses devem ser consecutivos e crescentes")
+        for values in (self.data_intensities, self.concept_intensities):
+            if tuple(sorted(values)) != values:
+                raise ValueError("Intensidades devem ser não decrescentes")
+        return self
+
+
+class DriftParams(ParamsModel):
+    """Limiares operacionais; não representam significância estatística universal."""
+
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    bins: int = Field(default=10, ge=2, le=100, strict=True)
+    epsilon: float = Field(default=1e-6, gt=0, lt=0.01)
+    psi_warning: float = Field(default=0.10, gt=0)
+    psi_alert: float = Field(default=0.25, gt=0)
+    ks_d: float = Field(default=0.10, gt=0, le=1)
+    categorical_js: float = Field(default=0.10, gt=0, le=1)
+    missing_rate_delta: float = Field(default=0.05, gt=0, le=1)
+    label_z: float = Field(default=3.0, gt=0)
+
+    @model_validator(mode="after")
+    def validate_thresholds(self) -> DriftParams:
+        if self.psi_warning >= self.psi_alert:
+            raise ValueError("psi_warning deve ser menor que psi_alert")
+        return self
+
+
+class PerformanceParams(ParamsModel):
+    """Avaliação com rótulos; bootstrap zero desabilita intervalos futuros."""
+
+    auc_drop: float = Field(default=0.05, gt=0, lt=1, allow_inf_nan=False)
+    bootstrap_samples: int = Field(default=200, ge=0, le=2000, strict=True)
+    seed: int = Field(default=42, ge=0, strict=True)
+
+
 class PipelineParams(ParamsModel):
     split: SplitParams
     train: TrainParams
     contract: ContractParams
     retention: RetentionParams
+    simulation: SimulationParams = Field(default_factory=SimulationParams)
+    drift: DriftParams = Field(default_factory=DriftParams)
+    performance: PerformanceParams = Field(default_factory=PerformanceParams)
+
+    @model_validator(mode="after")
+    def validate_batch_volume(self) -> PipelineParams:
+        if (
+            min(
+                self.simulation.batch_rows,
+                self.simulation.control_rows,
+                self.simulation.calibration_rows,
+            )
+            < self.contract.min_rows
+        ):
+            raise ValueError(
+                "Lotes, controle e calibração devem atender contract.min_rows"
+            )
+        return self
 
 
 def load_params(path: Path = PARAMS_PATH) -> PipelineParams:

@@ -1,0 +1,83 @@
+"""Contratos de saída da Etapa 2, sem I/O ou dependência de dashboards.
+
+Métricas não calculáveis usam None (null no JSON). NaN/Infinity são rejeitados
+na serialização, em vez de gerar JSON inválido ou esconder erros de cálculo.
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass, field
+from typing import Literal
+
+DriftStatus = Literal["OK", "WARN", "ALERT", "UNAVAILABLE"]
+
+
+@dataclass
+class JsonResult:
+    """Conversão estrita para artefatos JSON agregados."""
+
+    def to_dict(self) -> dict:
+        result = asdict(self)
+        json.dumps(result, allow_nan=False)
+        return result
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2, allow_nan=False)
+
+
+@dataclass
+class FeatureDriftResult(JsonResult):
+    feature: str
+    status: DriftStatus = "UNAVAILABLE"
+    psi: float | None = None
+    ks_d: float | None = None
+    ks_p_value: float | None = None
+    ks_confirmed: bool = False
+    reference_missing_rate: float | None = None
+    current_missing_rate: float | None = None
+    missing_rate_delta: float | None = None
+    missing_drift: bool | None = None
+    method: str = "psi_quantile_ks"
+    categorical_distance: float | None = None
+    unavailable_reason: str | None = None
+
+
+@dataclass
+class DriftResult(JsonResult):
+    batch_id: str
+    features: list[FeatureDriftResult] = field(default_factory=list)
+    # Denominador explícito: features analisáveis, sem score/target/metadados.
+    analyzed_features: int = 0
+    drift_share: float | None = None
+    drifted_features: list[str] = field(default_factory=list)
+    score_psi: float | None = None
+    default_rate: float | None = None
+    label_z: float | None = None
+    report_paths: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class PerformanceResult(JsonResult):
+    """AUC-base deve vir de controle fora do treino, não da referência de drift.
+
+    Sem rótulo ou sem duas classes, roc_auc fica None e unavailable_reason explica
+    o motivo. Esta interface não calcula performance; o avaliador entra na Fase D.
+    """
+
+    roc_auc: float | None = None
+    reference_roc_auc: float | None = None
+    auc_drop: float | None = None
+    pr_auc: float | None = None
+    brier: float | None = None
+    approval_rate: float | None = None
+    precision: float | None = None
+    recall: float | None = None
+    score_p50: float | None = None
+    score_p90: float | None = None
+    score_p99: float | None = None
+    auc_ci_low: float | None = None
+    auc_ci_high: float | None = None
+    labeled_rows: int = 0
+    baseline_source: str | None = None
+    unavailable_reason: str | None = None

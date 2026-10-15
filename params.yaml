@@ -26,7 +26,30 @@ contract:
   min_rows: 500
 
 # ── Etapa 2 (drift) ──────────────────────────────────────────────────────────
-# simulation, drift, performance, retrain: a definir pela Etapa 2.
+# Valores iniciais; intensidades serão verificadas na calibração da Fase C.
+simulation:
+  seed: 42
+  batch_rows: 10000
+  control_rows: 30000
+  calibration_rows: 10000
+  months: ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"]
+  data_intensities: [0.6, 1.0]
+  concept_intensities: [0.35, 0.55, 0.75]
+
+drift:
+  bins: 10
+  epsilon: 0.000001
+  psi_warning: 0.10
+  psi_alert: 0.25
+  ks_d: 0.10
+  categorical_js: 0.10
+  missing_rate_delta: 0.05
+  label_z: 3.0
+
+performance:
+  auc_drop: 0.05
+  bootstrap_samples: 200
+  seed: 42
 
 # ── Etapa 4 (governança) ─────────────────────────────────────────────────────
 retention:
