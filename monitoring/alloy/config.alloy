@@ -1,0 +1,70 @@
+logging {
+  level = "info"
+}
+
+// Recebe os traces OTLP do pipeline Python
+otelcol.receiver.otlp "default" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  output {
+    traces  = [otelcol.exporter.otlp.default.input]
+  }
+}
+
+// Envia os traces para o Tempo
+otelcol.exporter.otlp "default" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// Lê os logs do pipeline.jsonl
+local.file_match "pipeline_logs" {
+  path_targets = [{"__path__" = "/logs/pipeline.jsonl"}]
+}
+
+// Envia os logs para o Loki, extraindo o trace_id como structured metadata
+loki.source.file "pipeline_logs" {
+  targets = local.file_match.pipeline_logs.targets
+  forward_to = [loki.process.extract_trace.receiver]
+}
+
+loki.process "extract_trace" {
+  forward_to = [loki.write.default.receiver]
+  
+  stage.json {
+    expressions = {
+      trace_id = "trace_id",
+      batch_id = "batch_id",
+      stage = "stage",
+      level = "level",
+    }
+  }
+  
+  stage.labels {
+    values = {
+      batch_id = "batch_id",
+      stage = "stage",
+      level = "level",
+    }
+  }
+  
+  stage.structured_metadata {
+    values = {
+      trace_id = "trace_id",
+    }
+  }
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

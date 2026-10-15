@@ -1,0 +1,57 @@
+route:
+  group_by: ['alertname', 'batch_id']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'ml-team' # Fallback default
+  
+  routes:
+    - matchers:
+        - team="oncall"
+      receiver: 'oncall'
+    - matchers:
+        - team="platform"
+      receiver: 'platform'
+    - matchers:
+        - team="ml-team"
+      receiver: 'ml-team'
+
+receivers:
+  # Todos apontam para o nosso serviço Python (alert-receiver) configurado no docker-compose
+  - name: 'oncall'
+    webhook_configs:
+      - url: 'http://alert-receiver:8000/alerts'
+  - name: 'platform'
+    webhook_configs:
+      - url: 'http://alert-receiver:8000/alerts'
+  - name: 'ml-team'
+    webhook_configs:
+      - url: 'http://alert-receiver:8000/alerts'
+
+inhibit_rules:
+  # 1. Contrato bloqueado silencia drift e alertas do modelo no mesmo lote
+  - source_matchers:
+      - alertname="ContractViolation"
+    target_matchers:
+      - alertname=~"FeatureDrift.*|ModelPerformanceDrop|RetrainRecommended|LabelDrift|MultivariateDrift"
+    equal: ['batch_id']
+
+  # 2. Drift crítico silencia warning da mesma feature
+  - source_matchers:
+      - alertname="FeatureDriftCritical"
+    target_matchers:
+      - alertname="FeatureDriftWarning"
+    equal: ['batch_id', 'feature']
+
+  # 3. ModelPerformanceDrop silencia RetrainRecommended
+  - source_matchers:
+      - alertname="ModelPerformanceDrop"
+    target_matchers:
+      - alertname="RetrainRecommended"
+    equal: ['batch_id']
+
+  # 4. Estágio falho silencia PipelineStale
+  - source_matchers:
+      - alertname="PipelineStageFailed"
+    target_matchers:
+      - alertname="PipelineStale"

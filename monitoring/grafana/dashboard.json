@@ -1,0 +1,215 @@
+{
+  "title": "Observabilidade - Credit Scoring",
+  "tags": [
+    "mlops",
+    "fase4",
+    "pipeline"
+  ],
+  "timezone": "browser",
+  "refresh": "5s",
+  "panels": [
+    {
+      "title": "Status do Pipeline",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "pipeline_stage_status",
+          "legendFormat": "{{batch_id}} - {{stage}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "FALHA"
+                },
+                "1": {
+                  "text": "SUCESSO"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "Lotes em Quarentena",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "batch_quarantined",
+          "legendFormat": "{{batch_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Viola\u00e7\u00f5es de Contrato (Qualidade de Dados)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "contract_violations",
+          "legendFormat": "{{rule}} - {{severity}}"
+        }
+      ]
+    },
+    {
+      "title": "Dura\u00e7\u00e3o do Est\u00e1gio (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "pipeline_stage_duration_seconds",
+          "legendFormat": "{{batch_id}} - {{stage}}"
+        }
+      ]
+    },
+    {
+      "title": "Uso de CPU (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "stage_cpu_seconds",
+          "legendFormat": "{{batch_id}} - {{stage}}"
+        }
+      ]
+    },
+    {
+      "title": "Pico de Mem\u00f3ria (Bytes)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "stage_memory_peak_bytes",
+          "legendFormat": "{{batch_id}} - {{stage}}"
+        }
+      ]
+    },
+    {
+      "title": "Data Drift (PSI) - Requer Etapa 2",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "model_psi_score",
+          "legendFormat": "{{feature}}"
+        }
+      ]
+    },
+    {
+      "title": "Performance do Modelo (KS) - Requer Etapa 2",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "model_ks_score",
+          "legendFormat": "Score"
+        }
+      ]
+    },
+    {
+      "title": "Logs Estruturados do Pipeline",
+      "type": "logs",
+      "datasource": "Loki",
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "expr": "{batch_id=~\"2026-.*\"}"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true
+      }
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 
 Projeto acadêmico de classificação binária de risco de crédito, qualidade de dados e preparação para monitoramento de modelos. A base é o **All Lending Club Loan Data**. A frente documentada aqui implementa EDA, engenharia e preparação de features, Regressão Logística baseline (V1), otimização experimental (V2), contrato de entrada com Pandera e demonstração do bloqueio de um lote inválido (*bad batch*).
 
-> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks **e** em scripts (`make prepare`, `make train`, `make demo-contract`), com CI rodando lint e testes em dados sintéticos. As Etapas 2 (drift), 3 (observabilidade) e 4 (governança) estão em andamento.
+> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks e em scripts. A Etapa 3 (observabilidade centralizada) está concluída com métricas, logs, traces e dashboard gerado como código. As Etapas 2 (drift) e 4 (governança) estão em andamento.
 
 ## 1. Dataset e definição do problema
 
@@ -67,6 +67,17 @@ O `uv sync` utiliza `pyproject.toml` e `uv.lock`. Para notebooks no VS Code, sel
 
 **Importante:** o `uv.lock` versionado deve acompanhar qualquer mudança de dependências. Se o `pyproject.toml` for editado, execute `uv lock` (ou `uv sync`) e inclua ambos no commit.
 
+Para subir a infraestrutura de observabilidade da **Etapa 3** (requer Docker):
+
+# Sobe Prometheus, Grafana, MLflow, Loki, Tempo e Alloy
+docker compose --profile core --profile logs-traces up -d
+
+# Executa o pipeline de lotes para gerar métricas e rastreios
+uv run --env-file .env python -m credit_scoring_observability.run_all
+
+# Gera o Dashboard Definitivo no Grafana via API
+uv run python src/credit_scoring_observability/generate_dashboard.py
+
 ## 3. Estrutura do projeto
 
 ```text
@@ -97,7 +108,17 @@ credit-scoring-observability/
 
 As pastas locais sob `data/` são criadas pelos notebooks e pelos scripts conforme necessário. Os diretórios `models/` e `docs/` podem conter também arquivos criados por outras frentes do projeto.
 
-## 4. Ordem de execução dos notebooks
+## 4. Observabilidade
+
+O pipeline emite telemetria correlacionada usando a identidade do MLflow como âncora principal.
+
+* **Métricas:** Envio via Prometheus Pushgateway (violações de contrato, volumetria, consumo de hardware).
+* **Logs:** Estruturados em JSONL via `structlog`, consumidos pelo Grafana Alloy e indexados no Loki. Identificadores pessoais são mascarados na origem.
+* **Traces:** Tempos de execução de cada estágio mapeados via OpenTelemetry e exportados para o Tempo.
+* **Correlação:** O `trace_id` injetado nos logs corresponde exatamente ao ID gerado pelo MLflow. No Grafana, acessar um log no Loki exibe um link direto para o diagrama de execução no Tempo.
+* **Dashboard:** Gerado dinamicamente via script e disponível no Grafana (`http://localhost:3000`), aba Dashboards > Import (upload de `monitoring/grafana/dashboard.json`).
+
+## 5. Ordem de execução dos notebooks
 
 Abra os notebooks **em ordem**, com o kernel do ambiente do projeto. Eles pressupõem que `../data/` aponta para a pasta local de dados.
 
@@ -111,7 +132,7 @@ Abra os notebooks **em ordem**, com o kernel do ambiente do projeto. Eles pressu
 
 **Memória:** não execute os cinco notebooks simultaneamente. O carregamento dos notebooks de treinamento foi ajustado em chunks de 25.000 linhas, com redução de tipos, porque carregar a base inteira de uma vez pode causar `MemoryError`. A V1/V2 treinam em uma amostra de 300 mil registros; o teste estratificado de cerca de 270 mil é preservado integralmente. O Reference Dataset não substitui o treino.
 
-## 5. Modelos e métricas
+## 6. Modelos e métricas
 
 Os arquivos são gerados **localmente**, na pasta `models/`:
 
@@ -128,7 +149,7 @@ A comparação V1 × V2 mostrou, aproximadamente, Recall de **4,5%** na V1 e **6
 
 **Compartilhamento importante:** `.joblib` e `.pkl` estão no `.gitignore` e **não aparecem ao clonar o GitHub**. Para executar a inferência sem retreinar, cada colega deve receber ambos os arquivos da V2 (`credit_scoring_optimized.joblib` e `credit_scoring_optimized_metadata.json`) por um canal aprovado pelo grupo, por exemplo uma Release do repositório ou armazenamento compartilhado. O JSON de metadados sozinho **não contém o modelo**. Como alternativa, rode `make prepare && make train` (≈ 1,5 min), que reproduz a V2 com as mesmas métricas do notebook 04, ou execute os notebooks 03 e 04, usando o mesmo dataset, código e `uv.lock`. Carregue arquivos `joblib` apenas de origem confiável.
 
-## 6. Contrato de entrada e inferência validada
+## 7. Contrato de entrada e inferência validada
 
 O contrato fica em `src/credit_scoring_observability/data_contract.py` e valida as **23 features finais**, isto é, após `engineer_features()` e `split_features_target()`. Ele **não** recebe diretamente as 151 colunas do CSV bruto.
 
@@ -163,7 +184,7 @@ print(pd.DataFrame({"probabilidade_default": probabilities, "classe_v2": classes
 
 O gate `predict_proba_validated()` valida uma cópia profunda do lote antes de invocar o modelo. Dados inválidos levantam exceção do Pandera e **não são pontuados**. Não use o conjunto de referência como se fosse um lote independente para medir performance de generalização: ele foi amostrado do treino.
 
-## 7. Bad Batch e testes automatizados
+## 8. Bad Batch e testes automatizados
 
 **Script de validação operante:** `make validate BATCH=<arquivo.parquet|csv>` valida um lote; `make demo-contract` gera `data/production/corrupted.parquet` a partir do pool e o valida. Lote bloqueado sai com **exit 2**, vai para `data/quarantine/` e gera `reports/contracts/<lote>.json` com cada regra violada (camada, severidade, contagem) e exemplos com o `customer_id` mascarado. Além do contrato das features, o script aplica regras de lote: volume mínimo, cliente reenviado (`customer_id` duplicado), colunas inesperadas como `loan_status` (vazamento) e target binário.
 
@@ -179,11 +200,11 @@ uv run pytest tests/test_data_contract.py tests/test_validate.py -v
 
 Os testes usam só dados sintéticos (`synthetic.py`), então rodam no CI sem o CSV do Kaggle. O CI (`.github/workflows/ci.yml`) roda `ruff` e `pytest` em todo PR.
 
-## 8. Como continuar
+## 9. Como continuar
 
 **Checklist mínimo para os próximos responsáveis:** Python/`uv` configurados (`make setup`); dataset em `data/raw/`; `make prepare && make train` executados (Referência, pool e modelo V2 com threshold); todo lote validado pelo contrato antes da inferência (`registry.load_model().score` já aplica o contrato das features); `make test` aprovado.
 
-## 9. Governança e LGPD
+## 10. Governança e LGPD
 
 Resumo do plano de proteção de dados; a versão completa, com inventário, princípios, RIPD e auditoria, está em [docs/lgpd.md](docs/lgpd.md).
 
@@ -223,7 +244,7 @@ Razão de impacto desigual **0,983** (regra dos 4/5: 0,8). A mitigação por thr
 
 O que se adota é a região fora do modelo, a medição por lote, o guardrail no retreino (um challenger não pode piorar a razão em mais de 0,05) e a revisão humana.
 
-## 10. Análise causal
+## 11. Análise causal
 
 ```mermaid
 flowchart LR

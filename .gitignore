@@ -33,3 +33,10 @@ Thumbs.db
 # Saídas geradas localmente (relatórios de contrato, logs do pipeline)
 reports/contracts/
 logs/
+
+# MLflow
+mlruns/
+mlflow.db
+
+# Métricas locais do pipeline (Pushgateway fallback)
+reports/metrics/

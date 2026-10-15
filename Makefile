@@ -47,7 +47,13 @@ simulate: ## Generate the monthly production batches M1–M7 from the pool
 
 # ── Etapa 3: observabilidade ─────────────────────────────────────────────────
 monitor: ## Run the batch pipeline for every simulated month
-	@echo "TODO (Etapa 3)"
+	uv run python -m $(PKG).run_all
+
+up: ## Start the core observability stack (Prometheus, Grafana, MLflow)
+	docker compose --profile core up -d
+
+up-full: ## Start the full observability stack including logs and traces
+	docker compose --profile core --profile logs-traces --profile alerting up -d
 
 # ── Etapa 4: governança ──────────────────────────────────────────────────────
 fairness: ## Fairness by region on the production pool + mitigation evaluation (not adopted)

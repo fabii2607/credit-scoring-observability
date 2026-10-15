@@ -69,6 +69,7 @@ quote-style = "double"
 testpaths = ["tests"]
 addopts = "--tb=short"
 markers = ["integration: roda as CLIs de ponta a ponta (mais lento)"]
+pythonpath = ["src"]
 
 [tool.coverage.run]
 source = ["credit_scoring_observability"]

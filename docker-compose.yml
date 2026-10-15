@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  pushgateway:
+    image: prom/pushgateway:v1.6.2
+    container_name: pushgateway
+    profiles: ["core"]
+    ports:
+      - "9091:9091"
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: prometheus
+    profiles: ["core"]
+    ports:
+      - "9090:9090"
+    volumes:
+          - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+          - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro # Adicione esta linha
+          - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=90d" # Plano de retenção de 90 dias aplicado
+      - "--web.enable-lifecycle"
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: grafana
+    profiles: ["core"]
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true # Acesso anónimo documentado (não é produção)
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  mlflow:
+    build:
+      context: ./monitoring/mlflow
+    container_name: mlflow
+    profiles: ["core"]
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow/mlruns/mlflow.db --default-artifact-root /mlflow/mlruns --expose-prometheus /tmp
+
+  alertmanager:
+      image: prom/alertmanager:v0.26.0
+      container_name: alertmanager
+      profiles: ["alerting", "core"]
+      ports:
+        - "9093:9093"
+      volumes:
+        - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      command:
+        - "--config.file=/etc/alertmanager/alertmanager.yml"
+
+  alert-receiver:
+    image: python:3.11-slim
+    container_name: alert-receiver
+    profiles: ["alerting", "core"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./monitoring/alertmanager/receiver.py:/app/receiver.py:ro
+      - ./logs:/logs
+    command: python /app/receiver.py
+
+  loki:
+      image: grafana/loki:3.0.0
+      container_name: loki
+      profiles: ["logs-traces", "core"]
+      ports:
+        - "3100:3100"
+      command: -config.file=/etc/loki/local-config.yaml
+      volumes:
+        - ./monitoring/loki/loki.yml:/etc/loki/local-config.yaml:ro
+        - loki_data:/loki
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: tempo
+    profiles: ["logs-traces", "core"]
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+    command: -config.file=/etc/tempo.yaml
+    volumes:
+      - ./monitoring/tempo/tempo.yml:/etc/tempo.yaml:ro
+      - tempo_data:/tmp/tempo
+
+  alloy:
+    image: grafana/alloy:v1.1.0
+    container_name: alloy
+    profiles: ["logs-traces", "core"]
+    ports:
+      - "12345:12345"
+      - "4318:4318"
+    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    volumes:
+      - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./logs:/logs:ro
+    depends_on:
+      - loki
+      - tempo
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  tempo_data:
