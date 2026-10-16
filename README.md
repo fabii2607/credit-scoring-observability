@@ -45,7 +45,8 @@ Reprodução da Etapa 1 por scripts, sem abrir notebook (mesmos números dos not
 make prepare        # Referência (treino) × pool de produção (teste), pseudonimizados (~25 s)
 make train          # modelo V2 + threshold em models/ (~1 min)
 make demo-contract  # lote corrompido bloqueado pelo contrato: exit 2 + quarentena
-make help           # todos os alvos (os das Etapas 2 e 3 ainda imprimem TODO)
+make simulate       # sete lotes mensais + controle, calibração e demo
+make help           # todos os alvos disponíveis
 ```
 
 **Sem `make`** (comum no Windows), os mesmos alvos rodam direto com o `uv`:
@@ -57,6 +58,7 @@ make help           # todos os alvos (os das Etapas 2 e 3 ainda imprimem TODO)
 | `make test` | `uv run pytest` |
 | `make prepare` | `uv run python -m credit_scoring_observability.prepare` |
 | `make train` | `uv run python -m credit_scoring_observability.train` |
+| `make simulate` | `uv run python -m credit_scoring_observability.simulation` |
 | `make validate BATCH=<arquivo>` | `uv run python -m credit_scoring_observability.validate --batch <arquivo>` |
 | `make demo-contract` | `uv run python -m credit_scoring_observability.validate --demo-corrupted` |
 | `make fairness` | `uv run python -m credit_scoring_observability.mitigation` |
@@ -203,6 +205,24 @@ Os testes usam só dados sintéticos (`synthetic.py`), então rodam no CI sem o 
 ## 9. Como continuar
 
 **Checklist mínimo para os próximos responsáveis:** Python/`uv` configurados (`make setup`); dataset em `data/raw/`; `make prepare && make train` executados (Referência, pool e modelo V2 com threshold); todo lote validado pelo contrato antes da inferência (`registry.load_model().score` já aplica o contrato das features); `make test` aprovado.
+
+### Simulação de produção
+
+Depois de `make prepare`, execute `make simulate`. O simulador seleciona sem
+reposição 70 mil registros do pool de teste para sete meses de 10 mil linhas,
+mais 30 mil de controle, 10 mil de calibração e 2 mil para a demonstração de
+contrato. Janeiro–fevereiro são estáveis; março–abril têm features alteradas;
+maio–julho têm rótulos alterados por segmento, com X preservado.
+
+Os arquivos ficam em `data/production/`, com cópias originais em `originals/`,
+reservas em `reserves/` e rastreabilidade em `manifest.json`. Os meses de 2026
+representam a simulação; a data histórica de originação é preservada. O comando
+não treina o modelo nem gera relatórios Evidently. A integração desses lotes ao
+pipeline de observabilidade ainda está pendente.
+
+Consulte [Simulação de produção](docs/production-simulation.md) para regras,
+limitações e reprodução, e [Estatística de drift](docs/drift-statistics.md) para
+PSI, KS e parâmetros.
 
 ## 10. Governança e LGPD
 

@@ -99,3 +99,20 @@ def test_batch_volume_must_match_contract(tmp_path):
     path.write_text(yaml.safe_dump(data))
     with pytest.raises(ValidationError, match=r"contract\.min_rows"):
         load_params(path)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"demo_rows": 100},
+        {"fico_drop_points": 12},
+        {"concept_low_fico": 720, "concept_high_fico": 700},
+        {"concept_default_probability": 1.1},
+        {"concept_cure_probability": float("nan")},
+        {"utilization_increase_pp": -1},
+        {"dti_increase": float("inf")},
+    ],
+)
+def test_invalid_intervention_configuration(kwargs):
+    with pytest.raises(ValidationError):
+        SimulationParams(**kwargs)

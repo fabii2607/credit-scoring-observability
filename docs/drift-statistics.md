@@ -6,8 +6,9 @@ Destina-se a quem precisa executar, avaliar ou estender o monitoramento.
 Os testes estatísticos usam dados sintéticos e não exigem treinamento do modelo.
 
 O módulo atual calcula PSI, KS e variação de ausência em variáveis numéricas.
-A geração de lotes simulados, os relatórios Evidently e o cálculo de performance
-por lote ainda não estão implementados.
+A geração dos lotes está disponível em [simulação de produção](production-simulation.md).
+Os relatórios Evidently e o cálculo integrado de performance por lote ainda não
+estão implementados.
 
 ## Configuração
 
@@ -15,14 +16,15 @@ por lote ainda não estão implementados.
 
 | Seção | Responsabilidade |
 |---|---|
-| `simulation` | Seed 42; sete meses consecutivos, janeiro–julho de 2026; lotes de 10.000; controle de 30.000; calibração de 10.000; duas intensidades de data drift e três de concept drift. |
+| `simulation` | Seed 42; sete meses consecutivos, janeiro–julho de 2026; lotes de 10.000; controle de 30.000; calibração de 10.000; demo de 2.000; duas intensidades de data drift e três de concept drift. |
 | `drift` | Quantidade de bins, epsilon, faixas PSI, limite KS D, limites futuros de distância categórica e label drift, variação de ausência. |
 | `performance` | Queda relevante de AUC de 0,05; seed e número de reamostragens para intervalos futuros. |
 
-A configuração prevê reservas de controle e calibração disjuntas dos sete lotes
-mensais; a construção dessas reservas depende do simulador. A reserva de controle serve para performance fora do treino; a
-referência de distribuição continua sendo `reference_sample.parquet`.
-As intensidades são valores iniciais; não representam resultados já calibrados.
+O simulador cria reservas de controle e calibração disjuntas dos sete lotes
+mensais. O controle serve para performance fora do treino; a referência de
+distribuição continua sendo `reference_sample.parquet`. As intensidades
+configuram intervenções; não substituem a medição do drift e da performance
+em cada mês.
 As seeds da simulação não modificam a separação treino/teste do modelo.
 
 Intensidades devem ser finitas, em [0, 1] e não decrescentes. Meses precisam ser

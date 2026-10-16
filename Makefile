@@ -43,7 +43,7 @@ demo-contract: ## Push a corrupted batch through the data contract (expected to 
 
 # ── Etapa 2: simulação e drift ───────────────────────────────────────────────
 simulate: ## Generate the monthly production batches M1–M7 from the pool
-	@echo "TODO (Etapa 2)"
+	uv run python -m $(PKG).simulation
 
 # ── Etapa 3: observabilidade ─────────────────────────────────────────────────
 monitor: ## Run the batch pipeline for every simulated month

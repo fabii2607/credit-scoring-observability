@@ -75,6 +75,7 @@ class SimulationParams(ParamsModel):
     batch_rows: int = Field(default=10_000, ge=500, strict=True)
     control_rows: int = Field(default=30_000, ge=500, strict=True)
     calibration_rows: int = Field(default=10_000, ge=500, strict=True)
+    demo_rows: int = Field(default=2_000, ge=500, strict=True)
     months: tuple[str, ...] = (
         "2026-01",
         "2026-02",
@@ -86,9 +87,19 @@ class SimulationParams(ParamsModel):
     )
     data_intensities: tuple[Intensity, Intensity] = (0.6, 1.0)
     concept_intensities: tuple[Intensity, Intensity, Intensity] = (0.35, 0.55, 0.75)
+    income_reduction: Intensity = 0.35
+    dti_increase: float = Field(default=0.8, ge=0, allow_inf_nan=False)
+    utilization_increase_pp: float = Field(default=25.0, ge=0, allow_inf_nan=False)
+    fico_drop_points: int = Field(default=30, ge=0, multiple_of=5, strict=True)
+    concept_low_fico: float = Field(default=680, ge=300, le=850, allow_inf_nan=False)
+    concept_high_fico: float = Field(default=700, ge=300, le=850, allow_inf_nan=False)
+    concept_default_probability: Intensity = 0.25
+    concept_cure_probability: Intensity = 0.2
 
     @model_validator(mode="after")
     def validate_timeline(self) -> SimulationParams:
+        if self.concept_low_fico >= self.concept_high_fico:
+            raise ValueError("concept_low_fico deve ser menor que concept_high_fico")
         if len(self.months) != 7 or len(set(self.months)) != 7:
             raise ValueError("São necessários sete meses distintos")
         for month in self.months:
@@ -148,6 +159,7 @@ class PipelineParams(ParamsModel):
                 self.simulation.batch_rows,
                 self.simulation.control_rows,
                 self.simulation.calibration_rows,
+                self.simulation.demo_rows,
             )
             < self.contract.min_rows
         ):

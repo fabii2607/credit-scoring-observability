@@ -32,9 +32,20 @@ simulation:
   batch_rows: 10000
   control_rows: 30000
   calibration_rows: 10000
+  demo_rows: 2000
   months: ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"]
   data_intensities: [0.6, 1.0]
   concept_intensities: [0.35, 0.55, 0.75]
+  # Intervenções máximas, multiplicadas pela intensidade de cada mês.
+  income_reduction: 0.35
+  dti_increase: 0.8
+  utilization_increase_pp: 25.0
+  fico_drop_points: 30
+  # Relabel por segmentos, sem consultar scores do modelo.
+  concept_low_fico: 680
+  concept_high_fico: 700
+  concept_default_probability: 0.25
+  concept_cure_probability: 0.2
 
 drift:
   bins: 10
