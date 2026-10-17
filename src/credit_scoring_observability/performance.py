@@ -82,6 +82,8 @@ def evaluate_performance(
     ref_y, ref_scores, ref_reason = _observed(reference_scored)
     result = PerformanceResult(
         rows=len(batch_scored),
+        control_rows=len(reference_scored),
+        control_labeled_rows=len(ref_y),
         threshold=float(threshold),
         labeled_rows=len(y),
         baseline_source=baseline_source,
@@ -107,6 +109,60 @@ def evaluate_performance(
     if result.roc_auc is not None and result.reference_roc_auc is not None:
         result.auc_drop = result.reference_roc_auc - result.roc_auc
         result.performance_drop_detected = result.auc_drop > params.auc_drop
+        result.auc_drop_ci_low, result.auc_drop_ci_high = auc_difference_interval(
+            ref_y, ref_scores, y, labeled_scores, params
+        )
     else:
         result.comparison_unavailable_reason = reason or f"control_{ref_reason}"
     return result
+
+
+def auc_difference_interval(
+    before_y: np.ndarray,
+    before_scores: np.ndarray,
+    after_y: np.ndarray,
+    after_scores: np.ndarray,
+    params: PerformanceParams,
+    paired: bool = False,
+) -> tuple[float | None, float | None]:
+    """IC percentil 95% da queda de AUC; pares mantêm o mesmo índice sorteado.
+
+    Estratifica por before_y. No caso independente, estratifica cada amostra
+    separadamente. O chamador filtra rótulos conhecidos e garante pareamento.
+    O intervalo é condicional às amostras observadas e ao procedimento simulado.
+    """
+    if (
+        not params.bootstrap_samples
+        or len(np.unique(before_y)) != 2
+        or len(np.unique(after_y)) != 2
+    ):
+        return None, None
+    if paired and len(before_y) != len(after_y):
+        raise ValueError("Amostras pareadas devem ter o mesmo tamanho")
+    rng = np.random.default_rng(params.seed)
+    before_groups = [np.flatnonzero(before_y == v) for v in (0, 1)]
+    after_groups = [np.flatnonzero(after_y == v) for v in (0, 1)]
+    values = []
+    for _ in range(params.bootstrap_samples):
+        idx_before = np.concatenate(
+            [rng.choice(g, len(g), replace=True) for g in before_groups]
+        )
+        idx_after = (
+            idx_before
+            if paired
+            else np.concatenate(
+                [rng.choice(g, len(g), replace=True) for g in after_groups]
+            )
+        )
+        if len(np.unique(after_y[idx_after])) != 2:
+            continue
+        values.append(
+            float(
+                roc_auc_score(before_y[idx_before], before_scores[idx_before])
+                - roc_auc_score(after_y[idx_after], after_scores[idx_after])
+            )
+        )
+    if len(values) < 0.9 * params.bootstrap_samples:
+        return None, None
+    low, high = np.quantile(values, [0.025, 0.975])
+    return float(low), float(high)

@@ -88,3 +88,38 @@ class PerformanceResult(JsonResult):
     threshold: float | None = None
     default_rate: float | None = None
     performance_drop_detected: bool | None = None
+    auc_drop_ci_low: float | None = None
+    auc_drop_ci_high: float | None = None
+    control_rows: int = 0
+    control_labeled_rows: int = 0
+
+
+@dataclass
+class GateResult(JsonResult):
+    batch_id: str
+    status: Literal["OK", "WARN", "ALERT"]
+    diagnosis: str
+    recommended_action: str
+    recommendation: str
+    reasons: list[str] = field(default_factory=list)
+    limitations: list[str] = field(default_factory=list)
+    retrain_recommended: bool = False
+
+
+@dataclass
+class InterventionResult(JsonResult):
+    batch_id: str
+    scenario: str
+    original_performance: dict = field(default_factory=dict)
+    original_drifted_features: list[str] = field(default_factory=list)
+    current_drifted_features: list[str] = field(default_factory=list)
+    original_drift_share: float | None = None
+    current_drift_share: float | None = None
+    intervention_drift_share: float | None = None
+    intervention_score_psi: float | None = None
+    paired_auc_drop: float | None = None
+    paired_auc_drop_ci_low: float | None = None
+    paired_auc_drop_ci_high: float | None = None
+    paired_rows: int = 0
+    unavailable_reason: str | None = None
+    features: list[dict] = field(default_factory=list)
