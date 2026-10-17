@@ -4,7 +4,7 @@
 
 Projeto acadêmico de classificação binária de risco de crédito, qualidade de dados e preparação para monitoramento de modelos. A base é o **All Lending Club Loan Data**. A frente documentada aqui implementa EDA, engenharia e preparação de features, Regressão Logística baseline (V1), otimização experimental (V2), contrato de entrada com Pandera e demonstração do bloqueio de um lote inválido (*bad batch*).
 
-> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks e em scripts. A Etapa 3 (observabilidade centralizada) está concluída com métricas, logs, traces e dashboard gerado como código. As Etapas 2 (drift) e 4 (governança) estão em andamento.
+> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks e em scripts. A Etapa 2 já gera lotes simulados, predições e relatórios de drift/performance com Evidently. A base de observabilidade tem métricas, logs, traces e dashboard; sua integração com os novos resultados e o fechamento de governança ainda estão em andamento.
 
 ## 1. Dataset e definição do problema
 
@@ -46,6 +46,7 @@ make prepare        # Referência (treino) × pool de produção (teste), pseudo
 make train          # modelo V2 + threshold em models/ (~1 min)
 make demo-contract  # lote corrompido bloqueado pelo contrato: exit 2 + quarentena
 make simulate       # sete lotes mensais + controle, calibração e demo
+make analyze        # predições, HTML Evidently e performance por mês
 make help           # todos os alvos disponíveis
 ```
 
@@ -59,6 +60,7 @@ make help           # todos os alvos disponíveis
 | `make prepare` | `uv run python -m credit_scoring_observability.prepare` |
 | `make train` | `uv run python -m credit_scoring_observability.train` |
 | `make simulate` | `uv run python -m credit_scoring_observability.simulation` |
+| `make analyze` | `uv run python -m credit_scoring_observability.analyze` |
 | `make validate BATCH=<arquivo>` | `uv run python -m credit_scoring_observability.validate --batch <arquivo>` |
 | `make demo-contract` | `uv run python -m credit_scoring_observability.validate --demo-corrupted` |
 | `make fairness` | `uv run python -m credit_scoring_observability.mitigation` |
@@ -219,6 +221,13 @@ reservas em `reserves/` e rastreabilidade em `manifest.json`. Os meses de 2026
 representam a simulação; a data histórica de originação é preservada. O comando
 não treina o modelo nem gera relatórios Evidently. A integração desses lotes ao
 pipeline de observabilidade ainda está pendente.
+
+Execute `make analyze` para validar e pontuar os sete meses, gerar HTMLs em
+`reports/drift/` e resultados JSON/CSV em `reports/performance/`. Abra o HTML
+diretamente no navegador. A referência de distribuição é separada do controle
+de performance; detalhes em [Monitoramento de drift e performance](docs/drift-monitoring.md).
+As [evidências selecionadas](docs/evidencias/README.md) incluem HTMLs de cenários
+representativos, resultados dos sete meses e o resumo do bloqueio pelo contrato.
 
 Consulte [Simulação de produção](docs/production-simulation.md) para regras,
 limitações e reprodução, e [Estatística de drift](docs/drift-statistics.md) para

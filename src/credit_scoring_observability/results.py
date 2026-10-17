@@ -34,6 +34,7 @@ class FeatureDriftResult(JsonResult):
     ks_d: float | None = None
     ks_p_value: float | None = None
     ks_confirmed: bool = False
+    drifted: bool = False
     reference_missing_rate: float | None = None
     current_missing_rate: float | None = None
     missing_rate_delta: float | None = None
@@ -49,6 +50,7 @@ class DriftResult(JsonResult):
     features: list[FeatureDriftResult] = field(default_factory=list)
     # Denominador explícito: features analisáveis, sem score/target/metadados.
     analyzed_features: int = 0
+    unavailable_features: list[str] = field(default_factory=list)
     drift_share: float | None = None
     drifted_features: list[str] = field(default_factory=list)
     score_psi: float | None = None
@@ -62,7 +64,7 @@ class PerformanceResult(JsonResult):
     """AUC-base deve vir de controle fora do treino, não da referência de drift.
 
     Sem rótulo ou sem duas classes, roc_auc fica None e unavailable_reason explica
-    o motivo. Esta interface não calcula performance; o avaliador entra na Fase D.
+    o motivo. O avaliador está em performance.evaluate_performance.
     """
 
     roc_auc: float | None = None
@@ -81,3 +83,8 @@ class PerformanceResult(JsonResult):
     labeled_rows: int = 0
     baseline_source: str | None = None
     unavailable_reason: str | None = None
+    comparison_unavailable_reason: str | None = None
+    rows: int = 0
+    threshold: float | None = None
+    default_rate: float | None = None
+    performance_drop_detected: bool | None = None

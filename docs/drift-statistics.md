@@ -7,8 +7,8 @@ Os testes estatísticos usam dados sintéticos e não exigem treinamento do mode
 
 O módulo atual calcula PSI, KS e variação de ausência em variáveis numéricas.
 A geração dos lotes está disponível em [simulação de produção](production-simulation.md).
-Os relatórios Evidently e o cálculo integrado de performance por lote ainda não
-estão implementados.
+Os relatórios Evidently e o cálculo de performance por lote estão disponíveis
+via `make analyze`; consulte [Monitoramento de drift e performance](drift-monitoring.md).
 
 ## Configuração
 
@@ -110,8 +110,8 @@ pagadores calculado em `evaluate.py`.
   taxa de ausência 1, mas PSI/KS indisponíveis. Indisponível nunca significa zero.
 - Infinity, texto e valores complexos são rejeitados com `ValueError`, sem
   descarte silencioso. As funções não substituem o contrato de entrada do modelo.
-- PSI/KS são numéricos. A distância categórica será implementada no módulo de
-  drift/Evidently; ter um parâmetro `categorical_js` não executa esse cálculo.
+- PSI/KS são numéricos. O módulo `drift.py` implementa a distância categórica
+  Jensen–Shannon, integrada ao Evidently com o limite `categorical_js`.
 
 ## Exemplo reproduzível
 
@@ -147,9 +147,8 @@ categóricos sem atribuir um KS numérico a categorias.
 
 `PerformanceResult` prevê baseline e sua origem, AUC, delta AUC, PR-AUC, Brier,
 aprovação, precision/recall, quantis de score e intervalo AUC. Sem target ou sem
-duas classes, o módulo de avaliação deverá deixar AUC/delta indisponíveis e
-explicar o motivo. A estrutura já permite representar ausência de rótulo;
-o cálculo das métricas de performance ainda não está implementado.
+duas classes, `performance.py` deixa AUC/delta indisponíveis e explica o motivo.
+O avaliador usa um controle fora do treino; não usa AUC da referência de drift.
 
 ## Verificação
 

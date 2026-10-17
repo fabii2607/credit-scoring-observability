@@ -40,3 +40,7 @@ mlflow.db
 
 # Métricas locais do pipeline (Pushgateway fallback)
 reports/metrics/
+
+# Relatórios locais de monitoramento (versionar somente evidências revisadas).
+reports/drift/
+reports/performance/

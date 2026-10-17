@@ -1,0 +1,55 @@
+{
+  "batch_id": "2026-01",
+  "roc_auc": 0.705061464813288,
+  "reference_roc_auc": 0.6974035804539609,
+  "auc_drop": -0.007657884359327127,
+  "pr_auc": 0.3835814406014275,
+  "brier": 0.1486373140615608,
+  "approval_rate": 0.5936,
+  "precision": 0.32381889763779526,
+  "recall": 0.6394557823129252,
+  "score_p50": 0.17406468258201616,
+  "score_p90": 0.3550003252904933,
+  "score_p99": 0.528730111371284,
+  "auc_ci_low": 0.6911731760193375,
+  "auc_ci_high": 0.7168251467943367,
+  "labeled_rows": 10000,
+  "baseline_source": "reserves/control.parquet (fora do treino)",
+  "unavailable_reason": null,
+  "comparison_unavailable_reason": null,
+  "rows": 10000,
+  "threshold": 0.2,
+  "default_rate": 0.2058,
+  "performance_drop_detected": false,
+  "parameters": {
+    "auc_drop": 0.05,
+    "bootstrap_samples": 200,
+    "seed": 42
+  },
+  "context": {
+    "model_version": "V2_optimized",
+    "threshold": 0.2,
+    "reference_sha256": "f23e376f742d846c24f2307fee08dc877f7f53b423a2d6b4b90b4b0ec7309bc1",
+    "control_sha256": "9a3173db3d70d548aaab44940e4fd6098d0c2e6aa4e89e7db611f85f6008d4e2",
+    "simulation_manifest_sha256": "1c318226cf6793221bb6c3fc9bcdb77f6b211a4630d247ffcec8a5546d94636f",
+    "versions": {
+      "evidently": "0.7.23",
+      "scikit-learn": "1.9.1",
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "scipy": "1.17.1"
+    },
+    "python": "3.11.15",
+    "implementation_sha256": {
+      "analyze.py": "0cdef9d7492857eb9e0727143c0eff56f4dbdae370466fa4bcc411d9b2b4a3d7",
+      "drift.py": "21b49363da2f27691ee62734c6a8545ad5400c397a4406fa77f292a8340cde60",
+      "drift_report.py": "56803a7f809bb413fdefd710381801c910b6d0d929fd334befd5eb5b0418473d",
+      "performance.py": "314e6ba51efea48db6464b82d3cb2dece0880aada2966395409acfa6a807ba44",
+      "stats.py": "1499ed8bfd4694380745d223fb322c071c58e86b09eef451d5c852a14a8dfeb8",
+      "results.py": "c7304068494d746b906b090d7addfb372380195696e76ec75eb095dff0d41c74"
+    },
+    "model_sha256": "86aede0009614a35796822fe01764b5e5646074c482e5398e86be0174f6d3442",
+    "metadata_sha256": "eb05a610a5875ca8a35afe984c42ae3c64b142f849fd77b7cedbd4c689326043",
+    "batch_sha256": "74e29c2738d06c11d8c1eca7f0e11d3a8dfe08ed6851311cc7b06f919b8f53e4"
+  }
+}

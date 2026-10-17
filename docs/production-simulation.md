@@ -168,4 +168,5 @@ make test
 Os testes não exigem Kaggle. Verificam disjunção, determinismo, integridade das
 entradas, colunas alteradas, bloqueio do lote corrompido, limites, ausência de
 rótulos, hashes dos artefatos e degradação em um modelo treinado em dados
-sintéticos. Consulte também [estatística de drift](drift-statistics.md).
+sintéticos. Consulte também [estatística de drift](drift-statistics.md) e
+[execução dos relatórios](drift-monitoring.md).

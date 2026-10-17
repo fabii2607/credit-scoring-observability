@@ -1,0 +1,114 @@
+{
+  "execution_date": "2026-10-16",
+  "packaged_date": "2026-10-17",
+  "timezone": "America/Sao_Paulo",
+  "selected_months": [
+    "2026-01",
+    "2026-04",
+    "2026-06"
+  ],
+  "scope": "Evidências agregadas de simulação acadêmica; não representa produção real ou validação temporal externa.",
+  "context": {
+    "model_version": "V2_optimized",
+    "threshold": 0.2,
+    "reference_sha256": "f23e376f742d846c24f2307fee08dc877f7f53b423a2d6b4b90b4b0ec7309bc1",
+    "control_sha256": "9a3173db3d70d548aaab44940e4fd6098d0c2e6aa4e89e7db611f85f6008d4e2",
+    "simulation_manifest_sha256": "1c318226cf6793221bb6c3fc9bcdb77f6b211a4630d247ffcec8a5546d94636f",
+    "versions": {
+      "evidently": "0.7.23",
+      "scikit-learn": "1.9.1",
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "scipy": "1.17.1"
+    },
+    "python": "3.11.15",
+    "implementation_sha256": {
+      "analyze.py": "0cdef9d7492857eb9e0727143c0eff56f4dbdae370466fa4bcc411d9b2b4a3d7",
+      "drift.py": "21b49363da2f27691ee62734c6a8545ad5400c397a4406fa77f292a8340cde60",
+      "drift_report.py": "56803a7f809bb413fdefd710381801c910b6d0d929fd334befd5eb5b0418473d",
+      "performance.py": "314e6ba51efea48db6464b82d3cb2dece0880aada2966395409acfa6a807ba44",
+      "stats.py": "1499ed8bfd4694380745d223fb322c071c58e86b09eef451d5c852a14a8dfeb8",
+      "results.py": "c7304068494d746b906b090d7addfb372380195696e76ec75eb095dff0d41c74"
+    },
+    "model_sha256": "86aede0009614a35796822fe01764b5e5646074c482e5398e86be0174f6d3442",
+    "metadata_sha256": "eb05a610a5875ca8a35afe984c42ae3c64b142f849fd77b7cedbd4c689326043"
+  },
+  "artifacts": {
+    "drift/2026-01.html": {
+      "sha256": "4ef7ded934bbdf0c508fdab150549a87dd191c40aae6659329f6d070e1994235",
+      "source": "reports/drift/2026-01.html",
+      "source_sha256": "3e23994cda254937e275ecde424ad23e8db40c71264ee4447210e272a02a6f8e",
+      "bytes": 5111173,
+      "transformation": "Remoção de espaços em linhas vazias do HTML gerado; scripts e dados preservados."
+    },
+    "drift/2026-01.json": {
+      "sha256": "ce8d3d9887628f5ed90be0958c7b5b2f04123a4225a51749ce4d4b161fed4aeb",
+      "source": "reports/drift/2026-01.json",
+      "source_sha256": "ce8d3d9887628f5ed90be0958c7b5b2f04123a4225a51749ce4d4b161fed4aeb",
+      "bytes": 13177
+    },
+    "performance/2026-01.json": {
+      "sha256": "0530aceac8b0f277a8bd22008413a003e93e28e56a958f2a0c10c11694341894",
+      "source": "reports/performance/2026-01.json",
+      "source_sha256": "0530aceac8b0f277a8bd22008413a003e93e28e56a958f2a0c10c11694341894",
+      "bytes": 2211
+    },
+    "drift/2026-04.html": {
+      "sha256": "6cf0470d479ec2b58d5e2a2eef82d9c74e0140ebe4c18ba12499445e496fd22c",
+      "source": "reports/drift/2026-04.html",
+      "source_sha256": "a2b4c402dafb88f97c8a42a5aa12c82825604b8640e925bfcf318f1fa6425dc0",
+      "bytes": 5107106,
+      "transformation": "Remoção de espaços em linhas vazias do HTML gerado; scripts e dados preservados."
+    },
+    "drift/2026-04.json": {
+      "sha256": "72612b9289f150547dfc95f0b21ee9bbc63921e12e7821db284922f210544d51",
+      "source": "reports/drift/2026-04.json",
+      "source_sha256": "72612b9289f150547dfc95f0b21ee9bbc63921e12e7821db284922f210544d51",
+      "bytes": 13191
+    },
+    "performance/2026-04.json": {
+      "sha256": "6a3a843581efc8f37e432c5f5a910bac0bce3beb86fe6ba8faeb460b37d608d3",
+      "source": "reports/performance/2026-04.json",
+      "source_sha256": "6a3a843581efc8f37e432c5f5a910bac0bce3beb86fe6ba8faeb460b37d608d3",
+      "bytes": 2210
+    },
+    "drift/2026-06.html": {
+      "sha256": "cddbb78bad6ad1b0bf365179f170344ebf72bfb2fa3ac34520c811d5f09ab378",
+      "source": "reports/drift/2026-06.html",
+      "source_sha256": "c322781d5d73952c3641bf147964177d302826db7acf763c1f3b2b98290e7f32",
+      "bytes": 5111158,
+      "transformation": "Remoção de espaços em linhas vazias do HTML gerado; scripts e dados preservados."
+    },
+    "drift/2026-06.json": {
+      "sha256": "e7dedbd1ad546400e7ec359cc3679b46cc3ef008af4bd5b4195fce8f31b9d420",
+      "source": "reports/drift/2026-06.json",
+      "source_sha256": "e7dedbd1ad546400e7ec359cc3679b46cc3ef008af4bd5b4195fce8f31b9d420",
+      "bytes": 13176
+    },
+    "performance/2026-06.json": {
+      "sha256": "c6068066f3e4d711f2e3ed8b66eff4d87b81d537a4fb67b464efa9ee6b49eadd",
+      "source": "reports/performance/2026-06.json",
+      "source_sha256": "c6068066f3e4d711f2e3ed8b66eff4d87b81d537a4fb67b464efa9ee6b49eadd",
+      "bytes": 2210
+    },
+    "performance/summary.csv": {
+      "sha256": "9e14f36aed5e16bd704154ffc8b21c20bb6a8955f1c58335b7847d8ba587d720",
+      "source": "reports/performance/summary.csv",
+      "source_sha256": "9e14f36aed5e16bd704154ffc8b21c20bb6a8955f1c58335b7847d8ba587d720",
+      "bytes": 3124
+    },
+    "performance/summary.json": {
+      "sha256": "412fc996c0c4ff7f45522e7c203c70f650048a59effb9042a7913e9a5f4b40ea",
+      "source": "reports/performance/summary.json",
+      "source_sha256": "412fc996c0c4ff7f45522e7c203c70f650048a59effb9042a7913e9a5f4b40ea",
+      "bytes": 8518
+    },
+    "contracts/corrupted-summary.json": {
+      "sha256": "7094d2d2ac72a563ef6c2da50866961baf9e75d1c50a4bd510b7fe21977d2b32",
+      "source": "reports/contracts/corrupted.json",
+      "source_sha256": "8b1515790a0d1c4e8c5d3584ef50152caa3fd9e088028ba9ccf4b1746c714742",
+      "bytes": 1405,
+      "transformation": "Somente campos agregados; exemplos individuais removidos."
+    }
+  }
+}

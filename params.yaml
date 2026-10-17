@@ -26,7 +26,7 @@ contract:
   min_rows: 500
 
 # ── Etapa 2 (drift) ──────────────────────────────────────────────────────────
-# Valores iniciais; intensidades serão verificadas na calibração da Fase C.
+# Intervenções verificadas na reserva de calibração; limiares de drift abaixo.
 simulation:
   seed: 42
   batch_rows: 10000
