@@ -4,7 +4,7 @@
 
 Projeto acadêmico de classificação binária de risco de crédito, qualidade de dados e preparação para monitoramento de modelos. A base é o **All Lending Club Loan Data**. A frente documentada aqui implementa EDA, engenharia e preparação de features, Regressão Logística baseline (V1), otimização experimental (V2), contrato de entrada com Pandera e demonstração do bloqueio de um lote inválido (*bad batch*).
 
-> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks e em scripts. A Etapa 3 (observabilidade centralizada) está concluída com métricas, logs, traces e dashboard gerado como código. As Etapas 2 (drift) e 4 (governança) estão em andamento.
+> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks e em scripts. A Etapa 2 já gera lotes simulados, predições e relatórios de drift/performance com Evidently. A base de observabilidade tem métricas, logs, traces e dashboard; sua integração com os novos resultados e o fechamento de governança ainda estão em andamento.
 
 ## 1. Dataset e definição do problema
 
@@ -45,7 +45,9 @@ Reprodução da Etapa 1 por scripts, sem abrir notebook (mesmos números dos not
 make prepare        # Referência (treino) × pool de produção (teste), pseudonimizados (~25 s)
 make train          # modelo V2 + threshold em models/ (~1 min)
 make demo-contract  # lote corrompido bloqueado pelo contrato: exit 2 + quarentena
-make help           # todos os alvos (os das Etapas 2 e 3 ainda imprimem TODO)
+make simulate       # sete lotes mensais + controle, calibração e demo
+make analyze        # predições, HTML Evidently, comparação pareada e gate por mês
+make help           # todos os alvos disponíveis
 ```
 
 **Sem `make`** (comum no Windows), os mesmos alvos rodam direto com o `uv`:
@@ -57,6 +59,8 @@ make help           # todos os alvos (os das Etapas 2 e 3 ainda imprimem TODO)
 | `make test` | `uv run pytest` |
 | `make prepare` | `uv run python -m credit_scoring_observability.prepare` |
 | `make train` | `uv run python -m credit_scoring_observability.train` |
+| `make simulate` | `uv run python -m credit_scoring_observability.simulation` |
+| `make analyze` | `uv run python -m credit_scoring_observability.analyze` |
 | `make validate BATCH=<arquivo>` | `uv run python -m credit_scoring_observability.validate --batch <arquivo>` |
 | `make demo-contract` | `uv run python -m credit_scoring_observability.validate --demo-corrupted` |
 | `make fairness` | `uv run python -m credit_scoring_observability.mitigation` |
@@ -204,6 +208,31 @@ Os testes usam só dados sintéticos (`synthetic.py`), então rodam no CI sem o 
 
 **Checklist mínimo para os próximos responsáveis:** Python/`uv` configurados (`make setup`); dataset em `data/raw/`; `make prepare && make train` executados (Referência, pool e modelo V2 com threshold); todo lote validado pelo contrato antes da inferência (`registry.load_model().score` já aplica o contrato das features); `make test` aprovado.
 
+### Simulação de produção
+
+Depois de `make prepare`, execute `make simulate`. O simulador seleciona sem
+reposição 70 mil registros do pool de teste para sete meses de 10 mil linhas,
+mais 30 mil de controle, 10 mil de calibração e 2 mil para a demonstração de
+contrato. Janeiro–fevereiro são estáveis; março–abril têm features alteradas;
+maio–julho têm rótulos alterados por segmento, com X preservado.
+
+Os arquivos ficam em `data/production/`, com cópias originais em `originals/`,
+reservas em `reserves/` e rastreabilidade em `manifest.json`. Os meses de 2026
+representam a simulação; a data histórica de originação é preservada. O comando
+não treina o modelo nem gera relatórios Evidently. A integração desses lotes ao
+pipeline de observabilidade ainda está pendente.
+
+Execute `make analyze` para validar e pontuar os sete meses, gerar HTMLs em
+`reports/drift/` e resultados JSON/CSV em `reports/performance/`. Abra o HTML
+diretamente no navegador. A referência de distribuição é separada do controle
+de performance; detalhes em [Monitoramento de drift e performance](docs/drift-monitoring.md).
+As [evidências selecionadas](docs/evidencias/README.md) incluem HTMLs de cenários
+representativos, resultados dos sete meses e o resumo do bloqueio pelo contrato.
+
+Consulte [Simulação de produção](docs/production-simulation.md) para regras,
+limitações e reprodução, e [Estatística de drift](docs/drift-statistics.md) para
+PSI, KS e parâmetros.
+
 ## 10. Governança e LGPD
 
 Resumo do plano de proteção de dados; a versão completa, com inventário, princípios, RIPD e auditoria, está em [docs/lgpd.md](docs/lgpd.md).
@@ -266,3 +295,7 @@ As setas cheias mudam **quem chega** (covariate shift); a tracejada muda **o que
 | AUC cai > 0,05 e restaurar X não recupera | **Concept drift** | Retreinar com dados recentes |
 
 O método foi validado com o modelo V2 real: num lote com renda, dti, rotativo e FICO deslocados, restaurar os grupos recuperou 99,6% do desvio do score (84% só com renda + dti); num lote com rótulos trocados por segmento, a AUC caiu de 0,69 para 0,53 com PSI ≈ 0, e o diagnóstico foi concept drift. *Os números dos lotes M1–M7 entram com a execução de referência (Etapas 2 e 3).* **Limite:** isto mede a sensibilidade do modelo sob as hipóteses do DAG; não prova a causa no mundo real.
+
+A [análise consolidada e política do gate](docs/experiment-analysis.md) explica
+como consultar os gráficos em `reports/experiment/`, interpretar os intervalos
+e revisar a recomendação destacada no topo de cada HTML.

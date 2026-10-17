@@ -1,4 +1,4 @@
-.PHONY: help setup lint lint-fix test test-unit test-cov prepare train validate demo-contract simulate monitor fairness causal purge-quarantine clean
+.PHONY: help setup lint lint-fix test test-unit test-cov prepare train validate demo-contract simulate analyze monitor fairness causal purge-quarantine clean
 
 PKG := credit_scoring_observability
 
@@ -43,7 +43,10 @@ demo-contract: ## Push a corrupted batch through the data contract (expected to 
 
 # ── Etapa 2: simulação e drift ───────────────────────────────────────────────
 simulate: ## Generate the monthly production batches M1–M7 from the pool
-	@echo "TODO (Etapa 2)"
+	uv run python -m $(PKG).simulation
+
+analyze: ## Score monthly batches and generate Evidently HTML + performance JSON/CSV
+	uv run python -m $(PKG).analyze
 
 # ── Etapa 3: observabilidade ─────────────────────────────────────────────────
 monitor: ## Run the batch pipeline for every simulated month

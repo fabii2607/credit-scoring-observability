@@ -31,6 +31,7 @@ dependencies = [
     "prometheus-client>=0.20",
     "psutil>=7.0",
     "fairlearn>=0.11",
+    "scipy>=1.17,<2",
 ]
 
 # Pontos de entrada: `python -m credit_scoring_observability.<módulo>` (ver Makefile).

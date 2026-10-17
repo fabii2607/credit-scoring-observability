@@ -1,0 +1,66 @@
+{
+  "batch_id": "2026-04",
+  "status": "WARN",
+  "diagnosis": "covariate_suspected",
+  "recommended_action": "reinforced_monitoring",
+  "recommendation": "Reforçar monitoramento e investigar mudanças nas entradas",
+  "reasons": [
+    "4 de 23 features analisáveis com drift confirmado.",
+    "AUC controle 0.6974; lote 0.6995; queda -0.0021 (limite 0.0500).",
+    "Mudanças de entrada sem queda de AUC acima do limite; acompanhar Brier e aprovação."
+  ],
+  "limitations": [
+    "A recomendação exige análise humana; nenhum modelo é retreinado ou promovido por este gate."
+  ],
+  "retrain_recommended": false,
+  "context": {
+    "model_version": "V2_optimized",
+    "threshold": 0.2,
+    "reference_sha256": "f23e376f742d846c24f2307fee08dc877f7f53b423a2d6b4b90b4b0ec7309bc1",
+    "control_sha256": "9a3173db3d70d548aaab44940e4fd6098d0c2e6aa4e89e7db611f85f6008d4e2",
+    "simulation_manifest_sha256": "1c318226cf6793221bb6c3fc9bcdb77f6b211a4630d247ffcec8a5546d94636f",
+    "versions": {
+      "evidently": "0.7.23",
+      "scikit-learn": "1.9.1",
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "scipy": "1.17.1"
+    },
+    "python": "3.11.15",
+    "gate_parameters": {
+      "min_labeled_rows": 500,
+      "min_label_coverage": 0.9,
+      "min_bootstrap_samples": 100
+    },
+    "drift_parameters": {
+      "bins": 10,
+      "epsilon": 1e-06,
+      "psi_warning": 0.1,
+      "psi_alert": 0.25,
+      "ks_d": 0.1,
+      "categorical_js": 0.1,
+      "missing_rate_delta": 0.05,
+      "label_z": 3.0
+    },
+    "performance_parameters": {
+      "auc_drop": 0.05,
+      "bootstrap_samples": 200,
+      "seed": 42
+    },
+    "implementation_sha256": {
+      "analyze.py": "356fe4a8a814839b8de00a6b314c8c6de842a5bf5b897284a416367acbf95afc",
+      "drift.py": "21b49363da2f27691ee62734c6a8545ad5400c397a4406fa77f292a8340cde60",
+      "drift_report.py": "76e089a9a9f74a85adee755eb4a7b122dd1da3e7284089f8c9869f0a81e40acf",
+      "performance.py": "73dab896e25b7a83c642f279b462e8a2708d7be09baa3f74f1f99a3d9680fea7",
+      "stats.py": "1499ed8bfd4694380745d223fb322c071c58e86b09eef451d5c852a14a8dfeb8",
+      "results.py": "38dc3d55c2b721df182da47e5eca7b29eb79c1a846a6bb7029b19de1e8dc8ddc",
+      "comparison.py": "4bf288dbbcf318ac997548e3dc9200e06b2534dd59b660689825492c1c8f22c9",
+      "gate.py": "6ffec034ebad8e4395ae8f14a90e1d12a0dd9771d4ce46444b551a1cb4c32d85",
+      "experiment.py": "5ef4bd05ebcab87bfac54580c1070d0af10d6f8220f25f617212fdc012c419e0"
+    },
+    "model_sha256": "86aede0009614a35796822fe01764b5e5646074c482e5398e86be0174f6d3442",
+    "metadata_sha256": "eb05a610a5875ca8a35afe984c42ae3c64b142f849fd77b7cedbd4c689326043",
+    "batch_sha256": "04fdc8fa11cbac7471c93f87c9708a105fd12db5c2b59521dcb5759098f3789e",
+    "original_sha256": "b8a2d6561f682792a569aa14e2f33f55abc9dec4390de1963e1cc8e6a8f61493"
+  }
+}

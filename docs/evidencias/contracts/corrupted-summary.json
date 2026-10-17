@@ -1,0 +1,66 @@
+{
+  "batch_id": "corrupted",
+  "n_rows": 2100,
+  "passed": false,
+  "n_blockers": 8,
+  "n_warnings": 0,
+  "violations": [
+    {
+      "rule": "unexpected_column",
+      "column": "loan_status",
+      "severity": "blocker",
+      "count": 1,
+      "layer": "batch"
+    },
+    {
+      "rule": "duplicate_customer_id",
+      "column": "customer_id",
+      "severity": "blocker",
+      "count": 200,
+      "layer": "batch"
+    },
+    {
+      "rule": "emp_length_consistency",
+      "column": null,
+      "severity": "blocker",
+      "count": 103,
+      "layer": "model_input"
+    },
+    {
+      "rule": "greater_than",
+      "column": "loan_amnt",
+      "severity": "blocker",
+      "count": 103,
+      "layer": "model_input"
+    },
+    {
+      "rule": "in_range",
+      "column": "fico_avg",
+      "severity": "blocker",
+      "count": 107,
+      "layer": "model_input"
+    },
+    {
+      "rule": "isin",
+      "column": "application_type",
+      "severity": "blocker",
+      "count": 106,
+      "layer": "model_input"
+    },
+    {
+      "rule": "isin",
+      "column": "term",
+      "severity": "blocker",
+      "count": 104,
+      "layer": "model_input"
+    },
+    {
+      "rule": "not_nullable",
+      "column": "annual_inc",
+      "severity": "blocker",
+      "count": 105,
+      "layer": "model_input"
+    }
+  ],
+  "scope": "Resumo agregado do contrato, sem exemplos ou identificadores de registros."
+}

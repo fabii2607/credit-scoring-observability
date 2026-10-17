@@ -26,7 +26,46 @@ contract:
   min_rows: 500
 
 # ── Etapa 2 (drift) ──────────────────────────────────────────────────────────
-# simulation, drift, performance, retrain: a definir pela Etapa 2.
+# Intervenções verificadas na reserva de calibração; limiares de drift abaixo.
+simulation:
+  seed: 42
+  batch_rows: 10000
+  control_rows: 30000
+  calibration_rows: 10000
+  demo_rows: 2000
+  months: ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"]
+  data_intensities: [0.6, 1.0]
+  concept_intensities: [0.35, 0.55, 0.75]
+  # Intervenções máximas, multiplicadas pela intensidade de cada mês.
+  income_reduction: 0.35
+  dti_increase: 0.8
+  utilization_increase_pp: 25.0
+  fico_drop_points: 30
+  # Relabel por segmentos, sem consultar scores do modelo.
+  concept_low_fico: 680
+  concept_high_fico: 700
+  concept_default_probability: 0.25
+  concept_cure_probability: 0.2
+
+drift:
+  bins: 10
+  epsilon: 0.000001
+  psi_warning: 0.10
+  psi_alert: 0.25
+  ks_d: 0.10
+  categorical_js: 0.10
+  missing_rate_delta: 0.05
+  label_z: 3.0
+
+performance:
+  auc_drop: 0.05
+  bootstrap_samples: 200
+  seed: 42
+
+gate:
+  min_labeled_rows: 500
+  min_label_coverage: 0.9
+  min_bootstrap_samples: 100
 
 # ── Etapa 4 (governança) ─────────────────────────────────────────────────────
 retention:
