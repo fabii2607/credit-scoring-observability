@@ -1,17 +1,16 @@
 server:
   http_listen_port: 3200
-
 distributor:
   receivers:
     otlp:
       protocols:
         http:
+          endpoint: 0.0.0.0:4318
         grpc:
-
+          endpoint: 0.0.0.0:4317
 compactor:
   compaction:
-    block_retention: 2160h # Retenção de 90 dias exigida
-
+    block_retention: 2160h
 storage:
   trace:
     backend: local

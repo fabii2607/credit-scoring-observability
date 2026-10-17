@@ -1,84 +1,98 @@
 groups:
-  - name: credit_scoring_pipeline_alerts
-    rules:
-      # --- ALERTAS DE DADOS E PIPELINE (Os seus, ajustados) ---
-      - alert: ContractViolation
-        expr: batch_quarantined == 1
-        for: 1m
-        labels:
-          severity: critical
-          team: oncall
-        annotations:
-          summary: "O lote {{ $labels.batch_id }} foi bloqueado pelo contrato e colocado em quarentena."
-          runbook_url: "docs/monitoring-plan.md#contractviolation"
-
-      - alert: PipelineStageFailed
-        expr: pipeline_stage_status == 0
-        for: 1m
-        labels:
-          severity: critical
-          team: oncall
-        annotations:
-          summary: "O estágio {{ $labels.stage }} do lote {{ $labels.batch_id }} falhou."
-          runbook_url: "docs/monitoring-plan.md#pipelinestagefailed"
-
-      - alert: MonitoringTargetDown
-        expr: up == 0
-        for: 1m
-        labels:
-          severity: critical
-          team: platform
-        annotations:
-          summary: "O alvo de monitoramento {{ $labels.job }} está indisponível."
-          runbook_url: "docs/monitoring-plan.md#monitoringtargetdown"
-
-      - alert: PipelineStale
-        expr: time() - pipeline_last_success_timestamp > 86400 * 35 # 35 dias
-        labels:
-          severity: warning
-          team: ml-team
-        annotations:
-          summary: "Nenhum lote processado com sucesso nos últimos 35 dias."
-          runbook_url: "docs/monitoring-plan.md#pipelinestale"
-
-      # --- ALERTAS DE DRIFT E MODELO (Etapa 2) ---
-      - alert: FeatureDriftCritical
-        # Exigência do Handoff: PSI > 0.25 AND KS > 0.10
-        expr: feature_psi > 0.25 and on(batch_id, feature) feature_ks_d > 0.10
-        for: 1m
-        labels:
-          severity: critical
-          team: oncall
-        annotations:
-          summary: "Drift Crítico detectado na feature {{ $labels.feature }} no lote {{ $labels.batch_id }}."
-          runbook_url: "docs/monitoring-plan.md#featuredriftcritical"
-
-      - alert: FeatureDriftWarning
-        expr: feature_psi > 0.10 and feature_psi <= 0.25
-        for: 1m
-        labels:
-          severity: warning
-          team: ml-team
-        annotations:
-          summary: "Aviso de Drift na feature {{ $labels.feature }}."
-          runbook_url: "docs/monitoring-plan.md#featuredriftwarning"
-
-      - alert: ModelPerformanceDrop
-        expr: model_roc_auc < 0.65
-        for: 1m
-        labels:
-          severity: critical
-          team: oncall
-        annotations:
-          summary: "Queda na performance do modelo (ROC-AUC abaixo de 0.65) no lote {{ $labels.batch_id }}."
-          runbook_url: "docs/monitoring-plan.md#modelperformancedrop"
-          
-      - alert: RetrainRecommended
-        expr: drift_share > 0.30
-        for: 1m
-        labels:
-          severity: warning
-          team: ml-team
-        annotations:
-          summary: "Retreino recomendado (Drift share > 30%) no lote {{ $labels.batch_id }}."
-          runbook_url: "docs/monitoring-plan.md#retrainrecommended"
+- name: credit_scoring_pipeline_alerts
+  rules:
+  - alert: ContractViolation
+    expr: batch_quarantined == 1
+    for: 1m
+    labels:
+      severity: critical
+      team: oncall
+    annotations:
+      summary: Lote bloqueado pelo contrato.
+      runbook_url: docs/monitoring-plan.md#contractviolation
+  - alert: PipelineStageFailed
+    expr: pipeline_stage_status == 0
+    for: 1m
+    labels:
+      severity: critical
+      team: oncall
+    annotations:
+      summary: Falha inesperada no estágio.
+      runbook_url: docs/monitoring-plan.md#pipelinestagefailed
+  - alert: MonitoringTargetDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+      team: oncall
+    annotations:
+      summary: Alvo configurado indisponível.
+      runbook_url: docs/monitoring-plan.md#monitoringtargetdown
+  - alert: PipelineStale
+    expr: time() - max(pipeline_last_success_timestamp) > 86400 * 35 or absent(pipeline_last_success_timestamp)
+    for: 1m
+    labels:
+      severity: warning
+      team: ml-team
+    annotations:
+      summary: Nenhum sucesso recente ou nenhuma evidência de sucesso disponível.
+      runbook_url: docs/monitoring-plan.md#pipelinestale
+  - alert: FeatureDriftCritical
+    expr: feature_drift_confirmed == 1 and on(batch_id) (pipeline_batch_status ==
+      1)
+    for: 1m
+    labels:
+      severity: critical
+      team: oncall
+    annotations:
+      summary: Drift de entrada confirmado.
+      runbook_url: docs/monitoring-plan.md#featuredriftcritical
+  - alert: FeatureDriftWarning
+    expr: feature_psi >= 0.10 and feature_psi <= 0.25 and on(batch_id) (pipeline_batch_status
+      == 1)
+    for: 1m
+    labels:
+      severity: warning
+      team: ml-team
+    annotations:
+      summary: Feature na faixa de atenção PSI.
+      runbook_url: docs/monitoring-plan.md#featuredriftwarning
+  - alert: ModelPerformanceDrop
+    expr: model_auc_drop > on(batch_id) model_auc_drop_limit and on(batch_id) (pipeline_batch_status
+      == 1)
+    for: 1m
+    labels:
+      severity: critical
+      team: oncall
+    annotations:
+      summary: Queda de AUC acima do limite contra controle fora do treino.
+      runbook_url: docs/monitoring-plan.md#modelperformancedrop
+  - alert: ConceptDriftSuspected
+    expr: gate_concept_suspected == 1 and on(batch_id) (pipeline_batch_status == 1)
+    for: 1m
+    labels:
+      severity: warning
+      team: ml-team
+    annotations:
+      summary: Degradação sem drift marginal confirmado; investigar rótulos e dependências.
+      runbook_url: docs/monitoring-plan.md#conceptdriftsuspected
+  - alert: LabelDrift
+    expr: abs(label_z) > on(batch_id) label_z_limit and on(batch_id) (pipeline_batch_status
+      == 1)
+    for: 1m
+    labels:
+      severity: warning
+      team: ml-team
+    annotations:
+      summary: Mudança na prevalência dos rótulos.
+      runbook_url: docs/monitoring-plan.md#labeldrift
+  - alert: RetrainRecommended
+    expr: gate_retrain_recommended == 1 and on(batch_id) (pipeline_batch_status ==
+      1)
+    for: 1m
+    labels:
+      severity: warning
+      team: ml-team
+    annotations:
+      summary: Gate recomenda investigar e avaliar retreinamento; sem execução automática.
+      runbook_url: docs/monitoring-plan.md#retrainrecommended

@@ -1,0 +1,88 @@
+rule_files:
+- alert_rules.yml
+evaluation_interval: 1m
+tests:
+- interval: 1m
+  input_series:
+  - series: pipeline_batch_status{batch_id="data"}
+    values: 1 1 1
+  - series: pipeline_batch_status{batch_id="concept"}
+    values: 1 1 1
+  - series: pipeline_batch_status{batch_id="blocked"}
+    values: 2 2 2
+  - series: feature_drift_confirmed{batch_id="data",feature="dti"}
+    values: 1 1 1
+  - series: model_auc_drop{batch_id="concept"}
+    values: .10 .10 .10
+  - series: model_auc_drop_limit{batch_id="concept"}
+    values: .05 .05 .05
+  - series: gate_retrain_recommended{batch_id="concept"}
+    values: 1 1 1
+  - series: gate_concept_suspected{batch_id="concept"}
+    values: 1 1 1
+  - series: batch_quarantined{batch_id="blocked"}
+    values: 1 1 1
+  - series: gate_retrain_recommended{batch_id="blocked"}
+    values: 1 1 1
+  - series: model_auc_drop{batch_id="blocked"}
+    values: .20 .20 .20
+  - series: model_auc_drop_limit{batch_id="blocked"}
+    values: .05 .05 .05
+  alert_rule_test:
+  - eval_time: 2m
+    alertname: FeatureDriftCritical
+    exp_alerts:
+    - exp_labels:
+        batch_id: data
+        feature: dti
+        severity: critical
+        team: oncall
+      exp_annotations:
+        summary: Drift de entrada confirmado.
+        runbook_url: docs/monitoring-plan.md#featuredriftcritical
+  - eval_time: 2m
+    alertname: ModelPerformanceDrop
+    exp_alerts:
+    - exp_labels:
+        batch_id: concept
+        severity: critical
+        team: oncall
+      exp_annotations:
+        summary: Queda de AUC acima do limite contra controle fora do treino.
+        runbook_url: docs/monitoring-plan.md#modelperformancedrop
+  - eval_time: 2m
+    alertname: RetrainRecommended
+    exp_alerts:
+    - exp_labels:
+        batch_id: concept
+        severity: warning
+        team: ml-team
+      exp_annotations:
+        summary: Gate recomenda investigar e avaliar retreinamento; sem execução automática.
+        runbook_url: docs/monitoring-plan.md#retrainrecommended
+  - eval_time: 2m
+    alertname: ConceptDriftSuspected
+    exp_alerts:
+    - exp_labels:
+        batch_id: concept
+        severity: warning
+        team: ml-team
+      exp_annotations:
+        summary: Degradação sem drift marginal confirmado; investigar rótulos e dependências.
+        runbook_url: docs/monitoring-plan.md#conceptdriftsuspected
+  - eval_time: 2m
+    alertname: ContractViolation
+    exp_alerts:
+    - exp_labels:
+        batch_id: blocked
+        severity: critical
+        team: oncall
+      exp_annotations:
+        summary: Lote bloqueado pelo contrato.
+        runbook_url: docs/monitoring-plan.md#contractviolation
+  - eval_time: 2m
+    alertname: FeatureDriftWarning
+    exp_alerts: []
+  - eval_time: 2m
+    alertname: PipelineStageFailed
+    exp_alerts: []

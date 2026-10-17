@@ -1,85 +1,73 @@
+"""Snapshots isolados por lote, persistidos antes de qualquer envio remoto."""
+
+from __future__ import annotations
+
+import math
 import os
 from pathlib import Path
-from typing import ClassVar
 
 from prometheus_client import (
     CollectorRegistry,
     Gauge,
-    pushadd_to_gateway,
+    push_to_gateway,
     write_to_textfile,
 )
 
+from credit_scoring_observability.drift_report import safe_batch_id
+from credit_scoring_observability.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class MetricsPublisher:
-    """
-    Publica métricas do pipeline para o Prometheus via Pushgateway ou arquivo local.
-    """
-
-    # Dicionário de classe para reaproveitar os Gauges instanciados,
-    # já que o Prometheus não permite registrar a mesma métrica duas vezes.
-    _gauges: ClassVar[dict[str, Gauge]] = {}
-
-    def __init__(self, batch_id: str, stage: str | None = None):
-        self.batch_id = batch_id
+    def __init__(
+        self,
+        batch_id: str,
+        stage: str | None = None,
+        metrics_dir: Path = Path("reports/metrics"),
+    ):
+        self.batch_id = safe_batch_id(batch_id)
         self.stage = stage
+        self.metrics_dir = metrics_dir
         self.registry = CollectorRegistry()
-
-        # O agrupamento principal no Pushgateway será por batch_id e stage
+        self._gauges: dict[str, Gauge] = {}
         self.grouping_key = {"batch_id": self.batch_id}
-        if self.stage:
-            self.grouping_key["stage"] = self.stage
+        if stage:
+            self.grouping_key["stage"] = stage
 
-    def set(self, name: str, value: float, **labels) -> None:
-        """Cria um Gauge sob demanda e define seu valor."""
-        # Combina os labels padrões com os passados no método
-        all_labels = {"batch_id": self.batch_id}
+    def set(self, name: str, value: float | None, **labels) -> None:
+        if value is None or not math.isfinite(value):
+            return
+        all_labels = {"batch_id": self.batch_id, **labels}
         if self.stage:
             all_labels["stage"] = self.stage
-        all_labels.update(labels)
-
-        # Se o Gauge ainda não existe, criamos ele
-        if name not in self.__class__._gauges:
-            label_names = list(all_labels.keys())
-            self.__class__._gauges[name] = Gauge(
-                name=name,
-                documentation=f"Métrica {name}",
-                labelnames=label_names,
-                registry=self.registry,
+        if name not in self._gauges:
+            self._gauges[name] = Gauge(
+                name, f"Métrica {name}", sorted(all_labels), registry=self.registry
             )
-        else:
-            # Se já existe, precisamos garantir que ele está atrelado ao registro atual
-            self.registry.register(self.__class__._gauges[name])
+        self._gauges[name].labels(**all_labels).set(value)
 
-        # Seta o valor da métrica com os labels informados
-        self.__class__._gauges[name].labels(**all_labels).set(value)
-
-    def publish(self) -> None:
-        """
-        Envia as métricas via pushadd (POST) para o Pushgateway.
-        Se PUSHGATEWAY_URL estiver vazio, salva em .prom localmente.
-        """
-        pushgateway_url = os.environ.get("PUSHGATEWAY_URL", "").strip()
-
-        if pushgateway_url:
-            try:
-                # Usa pushadd para não sobrescrever o grupo inteiro (armadilha evitada)
-                pushadd_to_gateway(
-                    gateway=pushgateway_url,
-                    job="credit_scoring_pipeline",
-                    registry=self.registry,
-                    grouping_key=self.grouping_key,
-                )
-            except Exception as e:
-                # Falha de rede vira apenas um aviso, não trava o pipeline
-                import logging
-
-                logging.warning(f"Falha ao enviar métricas para o Pushgateway: {e}")
-        else:
-            # Fallback para ambiente offline: gravar em reports/metrics/
-            metrics_dir = Path("reports/metrics")
-            metrics_dir.mkdir(parents=True, exist_ok=True)
-
-            stage_suffix = f"_{self.stage}" if self.stage else ""
-            file_path = metrics_dir / f"{self.batch_id}{stage_suffix}.prom"
-
-            write_to_textfile(str(file_path), self.registry)
+    def publish(self) -> bool:
+        self.metrics_dir.mkdir(parents=True, exist_ok=True)
+        suffix = f"_{self.stage}" if self.stage else ""
+        write_to_textfile(
+            str(self.metrics_dir / f"{self.batch_id}{suffix}.prom"), self.registry
+        )
+        endpoint = os.getenv("PUSHGATEWAY_URL", "").strip()
+        if not endpoint:
+            return True
+        try:
+            # PUT substitui o snapshot do lote, eliminando métricas de execução anterior.
+            push_to_gateway(
+                endpoint,
+                job="credit_scoring_pipeline",
+                registry=self.registry,
+                grouping_key=self.grouping_key,
+                timeout=5,
+            )
+            return True
+        except Exception as error:
+            logger.warning(
+                "publicação de métricas falhou", error_type=type(error).__name__
+            )
+            return False

@@ -32,6 +32,9 @@ dependencies = [
     "psutil>=7.0",
     "fairlearn>=0.11",
     "scipy>=1.17,<2",
+    "opentelemetry-api>=1.45,<2",
+    "opentelemetry-sdk>=1.45,<2",
+    "opentelemetry-exporter-otlp-proto-http>=1.45,<2",
 ]
 
 # Pontos de entrada: `python -m credit_scoring_observability.<módulo>` (ver Makefile).

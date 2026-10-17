@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import platform
+from contextlib import nullcontext
 from dataclasses import asdict
 from importlib.metadata import version
 from pathlib import Path
@@ -90,6 +91,7 @@ def analyze_batch(
     scenario: str = "unknown",
     intensity: float | None = None,
     gate_params: GateParams | None = None,
+    observer=None,
 ) -> dict:
     """Executa um lote, devolvendo blocked/failed sem interromper os seguintes.
 
@@ -118,99 +120,118 @@ def analyze_batch(
         output.unlink(missing_ok=True)
     status_path = work / "status.json"
     write_json(status_path, {"batch_id": batch_id, "status": "running"})
+    stage = observer.stage if observer else lambda _: nullcontext()
     rows = None
     try:
-        frame = pd.read_parquet(path)
-        rows = len(frame)
+        with stage("ingest"):
+            frame = pd.read_parquet(path)
+            rows = len(frame)
         # O contrato é aplicado antes da checagem de integridade e da inferência.
-        validation = validate_batch(frame, batch_id)
-        enforce(
-            frame,
-            validation,
-            source_path=path,
-            report_dir=reports_dir / "contracts",
-            quarantine_dir=quarantine_dir,
-        )
-        source_sha = file_digest(path)
-        if expected_sha256 is not None and source_sha != expected_sha256:
-            raise ValueError("Lote difere do manifesto; gere ou verifique a simulação")
-        ids = set(frame[ID_COLUMN])
-        if ids & set(reference_scored[ID_COLUMN]) or ids & set(
-            control_scored[ID_COLUMN]
-        ):
-            raise ValueError("Lote compartilha identificadores com referência/controle")
-        original = None
-        if original_path is not None:
-            if (
-                expected_original_sha256 is None
-                or file_digest(original_path) != expected_original_sha256
+        with stage("validate"):
+            validation = validate_batch(frame, batch_id)
+            enforce(
+                frame,
+                validation,
+                source_path=path,
+                report_dir=reports_dir / "contracts",
+                quarantine_dir=quarantine_dir,
+            )
+            source_sha = file_digest(path)
+            if expected_sha256 is not None and source_sha != expected_sha256:
+                raise ValueError(
+                    "Lote difere do manifesto; gere ou verifique a simulação"
+                )
+            ids = set(frame[ID_COLUMN])
+            if ids & set(reference_scored[ID_COLUMN]) or ids & set(
+                control_scored[ID_COLUMN]
             ):
-                raise ValueError("Original difere do manifesto")
-            original = pd.read_parquet(original_path)
-            if not validate_batch(original, batch_id + "_original").passed:
-                raise ValueError("Original inválido para comparação")
-            if not original[ID_COLUMN].equals(frame[ID_COLUMN]):
-                raise ValueError("Original e lote não estão pareados na mesma ordem")
+                raise ValueError(
+                    "Lote compartilha identificadores com referência/controle"
+                )
+            original = None
+            if original_path is not None:
+                if (
+                    expected_original_sha256 is None
+                    or file_digest(original_path) != expected_original_sha256
+                ):
+                    raise ValueError("Original difere do manifesto")
+                original = pd.read_parquet(original_path)
+                if not validate_batch(original, batch_id + "_original").passed:
+                    raise ValueError("Original inválido para comparação")
+                if not original[ID_COLUMN].equals(frame[ID_COLUMN]):
+                    raise ValueError(
+                        "Original e lote não estão pareados na mesma ordem"
+                    )
         # enforce já aprovou o lote completo; score aplica adicionalmente o schema de features.
-        scored = model.score(frame)
-        work.mkdir(parents=True, exist_ok=True)
-        frame.to_parquet(work / "model_input.parquet", index=False)
-        scored.to_parquet(work / "scored.parquet", index=False)
-        drift = detect_drift(reference_scored, scored, batch_id, drift_params)
-        perf = evaluate_performance(
-            control_scored,
-            scored,
-            model.threshold,
-            performance_params,
-            baseline_source="reserves/control.parquet (fora do treino)",
-        )
+        with stage("score"):
+            scored = model.score(frame)
+            work.mkdir(parents=True, exist_ok=True)
+            frame.to_parquet(work / "model_input.parquet", index=False)
+            scored.to_parquet(work / "scored.parquet", index=False)
+        with stage("drift"):
+            drift = detect_drift(reference_scored, scored, batch_id, drift_params)
+        with stage("performance"):
+            perf = evaluate_performance(
+                control_scored,
+                scored,
+                model.threshold,
+                performance_params,
+                baseline_source="reserves/control.parquet (fora do treino)",
+            )
         batch_context = {**context, "batch_sha256": source_sha}
         comparison = None
-        if original is not None:
-            original_scored = model.score(original)
-            comparison = compare_intervention(
+        with stage("comparison"):
+            if original is not None:
+                original_scored = model.score(original)
+                comparison = compare_intervention(
+                    reference_scored,
+                    control_scored,
+                    original_scored,
+                    scored,
+                    drift,
+                    perf,
+                    scenario,
+                    model.threshold,
+                    drift_params,
+                    performance_params,
+                )
+                original_scored.to_parquet(
+                    work / "original_scored.parquet", index=False
+                )
+                batch_context["original_sha256"] = expected_original_sha256
+                write_json(
+                    reports_dir / "intervention" / f"{batch_id}.json",
+                    {**comparison.to_dict(), "context": batch_context},
+                )
+        with stage("gate"):
+            gate = evaluate_gate(
+                drift, perf, gate_params, performance_params, drift_params
+            )
+        with stage("reports"):
+            write_json(
+                reports_dir / "gate" / f"{batch_id}.json",
+                {**gate.to_dict(), "context": batch_context},
+            )
+            write_drift_report(
                 reference_scored,
-                control_scored,
-                original_scored,
                 scored,
                 drift,
-                perf,
-                scenario,
-                model.threshold,
+                reports_dir / "drift",
                 drift_params,
-                performance_params,
+                batch_context,
+                gate=gate,
+                performance=perf,
+                comparison=comparison,
             )
-            original_scored.to_parquet(work / "original_scored.parquet", index=False)
-            batch_context["original_sha256"] = expected_original_sha256
             write_json(
-                reports_dir / "intervention" / f"{batch_id}.json",
-                {**comparison.to_dict(), "context": batch_context},
+                reports_dir / "performance" / f"{batch_id}.json",
+                {
+                    "batch_id": batch_id,
+                    **perf.to_dict(),
+                    "parameters": performance_params.model_dump(mode="json"),
+                    "context": batch_context,
+                },
             )
-        gate = evaluate_gate(drift, perf, gate_params, performance_params, drift_params)
-        write_json(
-            reports_dir / "gate" / f"{batch_id}.json",
-            {**gate.to_dict(), "context": batch_context},
-        )
-        write_drift_report(
-            reference_scored,
-            scored,
-            drift,
-            reports_dir / "drift",
-            drift_params,
-            batch_context,
-            gate=gate,
-            performance=perf,
-            comparison=comparison,
-        )
-        write_json(
-            reports_dir / "performance" / f"{batch_id}.json",
-            {
-                "batch_id": batch_id,
-                **perf.to_dict(),
-                "parameters": performance_params.model_dump(mode="json"),
-                "context": batch_context,
-            },
-        )
         outcome = {
             "batch_id": batch_id,
             "status": "success",
@@ -272,6 +293,8 @@ def run(
     include_corrupted: bool = False,
     model: ScoringModel | None = None,
     performance_params: PerformanceParams | None = None,
+    observer=None,
+    consolidate: bool = True,
 ) -> list[dict]:
     """Executa meses do manifesto com modelo congelado e controle separado."""
     import json
@@ -294,70 +317,91 @@ def run(
             raise ValueError("Lote não consta no manifesto")
     if not batch_ids or len(set(batch_ids)) != len(batch_ids):
         raise ValueError("Seleção de lotes deve ser não vazia e sem duplicações")
-    injected_model = model is not None
-    model = model or load_model()
-    reference = pd.read_parquet(reference_path).drop(
-        columns=SPLIT_COLUMN, errors="ignore"
-    )
-    control_path = production_dir / "reserves" / "control.parquet"
-    if (
-        file_digest(control_path)
-        != manifest["artifacts"]["reserves/control.parquet"]["sha256"]
-    ):
-        raise ValueError("Controle difere do manifesto")
-    control = pd.read_parquet(control_path)
-    if set(reference[ID_COLUMN]) & set(control[ID_COLUMN]):
-        raise ValueError("Controle e referência não podem compartilhar registros")
-    reference_scored = score_validated(
-        reference, model, "reference_sample", reports_dir / "contracts", quarantine_dir
-    )
-    control_scored = score_validated(
-        control, model, "performance_control", reports_dir / "contracts", quarantine_dir
-    )
-    context = {
-        "model_version": model.version,
-        "threshold": model.threshold,
-        "reference_sha256": file_digest(reference_path),
-        "control_sha256": file_digest(control_path),
-        "simulation_manifest_sha256": file_digest(manifest_path),
-        "versions": {
-            name: version(name)
-            for name in ("evidently", "scikit-learn", "numpy", "pandas", "scipy")
-        },
-        "python": platform.python_version(),
-        "gate_parameters": params.gate.model_dump(mode="json"),
-        "drift_parameters": params.drift.model_dump(mode="json"),
-        "performance_parameters": (performance_params or params.performance).model_dump(
-            mode="json"
-        ),
-        "implementation_sha256": {
-            name: file_digest(Path(__file__).with_name(name))
-            for name in (
-                "analyze.py",
-                "drift.py",
-                "drift_report.py",
-                "performance.py",
-                "stats.py",
-                "results.py",
-                "comparison.py",
-                "gate.py",
-                "experiment.py",
-            )
-        },
-    }
-    if not injected_model:
-        context.update(
-            model_sha256=file_digest(MODEL_FILE),
-            metadata_sha256=file_digest(MODEL_METADATA_FILE),
+    with observer.stage("prepare") if observer else nullcontext():
+        injected_model = model is not None
+        model = model or load_model()
+        reference = pd.read_parquet(reference_path).drop(
+            columns=SPLIT_COLUMN, errors="ignore"
         )
-    for name, scored in [
-        ("_reference", reference_scored),
-        ("_control", control_scored),
-    ]:
-        destination = interim_dir / name
-        destination.mkdir(parents=True, exist_ok=True)
-        scored.to_parquet(destination / "scored.parquet", index=False)
-        write_json(destination / "metadata.json", context)
+        control_path = production_dir / "reserves" / "control.parquet"
+        if (
+            file_digest(control_path)
+            != manifest["artifacts"]["reserves/control.parquet"]["sha256"]
+        ):
+            raise ValueError("Controle difere do manifesto")
+        control = pd.read_parquet(control_path)
+        if set(reference[ID_COLUMN]) & set(control[ID_COLUMN]):
+            raise ValueError("Controle e referência não podem compartilhar registros")
+        reference_scored = score_validated(
+            reference,
+            model,
+            "reference_sample",
+            reports_dir / "contracts",
+            quarantine_dir,
+        )
+        control_scored = score_validated(
+            control,
+            model,
+            "performance_control",
+            reports_dir / "contracts",
+            quarantine_dir,
+        )
+        context = {
+            "model_version": model.version,
+            "threshold": model.threshold,
+            "reference_sha256": file_digest(reference_path),
+            "control_sha256": file_digest(control_path),
+            "simulation_manifest_sha256": file_digest(manifest_path),
+            "versions": {
+                name: version(name)
+                for name in ("evidently", "scikit-learn", "numpy", "pandas", "scipy")
+            },
+            "python": platform.python_version(),
+            "gate_parameters": params.gate.model_dump(mode="json"),
+            "drift_parameters": params.drift.model_dump(mode="json"),
+            "performance_parameters": (
+                performance_params or params.performance
+            ).model_dump(mode="json"),
+            "implementation_sha256": {
+                name: file_digest(Path(__file__).with_name(name))
+                for name in (
+                    "analyze.py",
+                    "drift.py",
+                    "drift_report.py",
+                    "performance.py",
+                    "stats.py",
+                    "results.py",
+                    "comparison.py",
+                    "gate.py",
+                    "experiment.py",
+                )
+            },
+        }
+        if observer:
+            context["observability_sha256"] = {
+                name: file_digest(Path(__file__).with_name(name))
+                for name in (
+                    "observation.py",
+                    "metrics.py",
+                    "stages.py",
+                    "tracing.py",
+                    "run_batch.py",
+                    "run_all.py",
+                )
+            }
+        if not injected_model:
+            context.update(
+                model_sha256=file_digest(MODEL_FILE),
+                metadata_sha256=file_digest(MODEL_METADATA_FILE),
+            )
+        for name, scored in [
+            ("_reference", reference_scored),
+            ("_control", control_scored),
+        ]:
+            destination = interim_dir / name
+            destination.mkdir(parents=True, exist_ok=True)
+            scored.to_parquet(destination / "scored.parquet", index=False)
+            write_json(destination / "metadata.json", context)
     outcomes = []
     batches = {b["batch_id"]: b for b in manifest["batches"]}
     for batch_id in batch_ids:
@@ -382,9 +426,16 @@ def run(
             scenario=item["scenario"] if item else "contract_demo",
             intensity=item["intensity"] if item else None,
             gate_params=params.gate,
+            observer=observer,
         )
         outcomes.append(outcome)
         logger.info("lote analisado", batch_id=batch_id, status=outcome["status"])
+    if consolidate:
+        write_summary(outcomes, reports_dir, context)
+    return outcomes
+
+
+def write_summary(outcomes: list[dict], reports_dir: Path, context: dict) -> None:
     write_json(
         reports_dir / "performance" / "summary.json",
         {"context": context, "batches": outcomes},
@@ -393,7 +444,6 @@ def run(
         reports_dir / "performance" / "summary.csv", index=False
     )
     write_experiment(outcomes, reports_dir, context)
-    return outcomes
 
 
 def main() -> None:

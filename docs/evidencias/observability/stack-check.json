@@ -1,0 +1,177 @@
+{
+  "targets_up": 6,
+  "grafana_provisioned": true,
+  "batches": [
+    {
+      "batch_id": "corrupted",
+      "status": "blocked",
+      "metrics_match": true,
+      "mlflow_verified": true,
+      "trace_delivered": true,
+      "logs_correlated": true
+    },
+    {
+      "batch_id": "2026-01",
+      "status": "success",
+      "metrics_match": true,
+      "mlflow_verified": true,
+      "trace_delivered": true,
+      "logs_correlated": true
+    },
+    {
+      "batch_id": "2026-02",
+      "status": "success",
+      "metrics_match": true,
+      "mlflow_verified": true,
+      "trace_delivered": true,
+      "logs_correlated": true
+    },
+    {
+      "batch_id": "2026-03",
+      "status": "success",
+      "metrics_match": true,
+      "mlflow_verified": true,
+      "trace_delivered": true,
+      "logs_correlated": true
+    },
+    {
+      "batch_id": "2026-04",
+      "status": "success",
+      "metrics_match": true,
+      "mlflow_verified": true,
+      "trace_delivered": true,
+      "logs_correlated": true
+    },
+    {
+      "batch_id": "2026-05",
+      "status": "success",
+      "metrics_match": true,
+      "mlflow_verified": true,
+      "trace_delivered": true,
+      "logs_correlated": true
+    },
+    {
+      "batch_id": "2026-06",
+      "status": "success",
+      "metrics_match": true,
+      "mlflow_verified": true,
+      "trace_delivered": true,
+      "logs_correlated": true
+    },
+    {
+      "batch_id": "2026-07",
+      "status": "success",
+      "metrics_match": true,
+      "mlflow_verified": true,
+      "trace_delivered": true,
+      "logs_correlated": true
+    }
+  ],
+  "alerts": [
+    {
+      "name": "ContractViolation",
+      "batch_id": "corrupted",
+      "state": "firing"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-04",
+      "state": "pending"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-04",
+      "state": "pending"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-03",
+      "state": "firing"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-03",
+      "state": "firing"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-03",
+      "state": "firing"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-04",
+      "state": "pending"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-04",
+      "state": "pending"
+    },
+    {
+      "name": "FeatureDriftWarning",
+      "batch_id": "2026-03",
+      "state": "firing"
+    },
+    {
+      "name": "ModelPerformanceDrop",
+      "batch_id": "2026-07",
+      "state": "pending"
+    },
+    {
+      "name": "ModelPerformanceDrop",
+      "batch_id": "2026-05",
+      "state": "pending"
+    },
+    {
+      "name": "ModelPerformanceDrop",
+      "batch_id": "2026-06",
+      "state": "pending"
+    },
+    {
+      "name": "ConceptDriftSuspected",
+      "batch_id": "2026-05",
+      "state": "pending"
+    },
+    {
+      "name": "ConceptDriftSuspected",
+      "batch_id": "2026-06",
+      "state": "pending"
+    },
+    {
+      "name": "ConceptDriftSuspected",
+      "batch_id": "2026-07",
+      "state": "pending"
+    },
+    {
+      "name": "LabelDrift",
+      "batch_id": "2026-07",
+      "state": "pending"
+    },
+    {
+      "name": "LabelDrift",
+      "batch_id": "2026-05",
+      "state": "pending"
+    },
+    {
+      "name": "LabelDrift",
+      "batch_id": "2026-06",
+      "state": "pending"
+    },
+    {
+      "name": "RetrainRecommended",
+      "batch_id": "2026-07",
+      "state": "pending"
+    },
+    {
+      "name": "RetrainRecommended",
+      "batch_id": "2026-05",
+      "state": "pending"
+    },
+    {
+      "name": "RetrainRecommended",
+      "batch_id": "2026-06",
+      "state": "pending"
+    }
+  ]
+}

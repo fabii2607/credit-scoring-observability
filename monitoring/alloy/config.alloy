@@ -27,7 +27,7 @@ otelcol.exporter.otlp "default" {
 
 // Lê os logs do pipeline.jsonl
 local.file_match "pipeline_logs" {
-  path_targets = [{"__path__" = "/logs/pipeline.jsonl"}]
+  path_targets = [{"__path__" = "/logs/pipeline.jsonl", "job" = "credit-scoring-pipeline"}]
 }
 
 // Envia os logs para o Loki, extraindo o trace_id como structured metadata
