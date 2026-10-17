@@ -119,8 +119,8 @@ estável; degradação sem drift marginal das features merece investigação de
 concept drift, cobertura de rótulos e outros problemas.
 
 O intervalo de AUC é percentil de 95%, com 200 reamostragens estratificadas pelo
-target e seed fixa. É um intervalo da AUC atual, não da diferença entre AUCs.
-`bootstrap_samples: 0` desabilita esse cálculo.
+target e seed fixa. Além desse intervalo da AUC atual, são calculados intervalos da queda contra o controle e da queda pareada antes/depois, descritos no [guia do experimento](experiment-analysis.md).
+`bootstrap_samples: 0` desabilita esses cálculos.
 
 Sem target ou sem duas classes observadas, AUC e comparação ficam indisponíveis,
 com motivo explícito; não são substituídas por zero. Aprovação e quantis de score
@@ -212,3 +212,8 @@ entre cálculos e Evidently, exclusão de identificadores e bloqueio antes da
 inferência. O teste integrado processa um lote bloqueado antes de meses válidos
 para comprovar a continuidade. A integração de métricas ao dashboard, regras de
 alerta da stack e política de intervenção são trabalhos separados.
+
+## Consolidação e recomendação
+
+O [guia do experimento e do gate](experiment-analysis.md) descreve os gráficos
+temporais, as comparações pareadas e a recomendação exibida no topo dos HTMLs.

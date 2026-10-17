@@ -46,7 +46,7 @@ make prepare        # Referência (treino) × pool de produção (teste), pseudo
 make train          # modelo V2 + threshold em models/ (~1 min)
 make demo-contract  # lote corrompido bloqueado pelo contrato: exit 2 + quarentena
 make simulate       # sete lotes mensais + controle, calibração e demo
-make analyze        # predições, HTML Evidently e performance por mês
+make analyze        # predições, HTML Evidently, comparação pareada e gate por mês
 make help           # todos os alvos disponíveis
 ```
 
@@ -295,3 +295,7 @@ As setas cheias mudam **quem chega** (covariate shift); a tracejada muda **o que
 | AUC cai > 0,05 e restaurar X não recupera | **Concept drift** | Retreinar com dados recentes |
 
 O método foi validado com o modelo V2 real: num lote com renda, dti, rotativo e FICO deslocados, restaurar os grupos recuperou 99,6% do desvio do score (84% só com renda + dti); num lote com rótulos trocados por segmento, a AUC caiu de 0,69 para 0,53 com PSI ≈ 0, e o diagnóstico foi concept drift. *Os números dos lotes M1–M7 entram com a execução de referência (Etapas 2 e 3).* **Limite:** isto mede a sensibilidade do modelo sob as hipóteses do DAG; não prova a causa no mundo real.
+
+A [análise consolidada e política do gate](docs/experiment-analysis.md) explica
+como consultar os gráficos em `reports/experiment/`, interpretar os intervalos
+e revisar a recomendação destacada no topo de cada HTML.
