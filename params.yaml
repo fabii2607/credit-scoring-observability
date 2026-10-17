@@ -62,6 +62,11 @@ performance:
   bootstrap_samples: 200
   seed: 42
 
+gate:
+  min_labeled_rows: 500
+  min_label_coverage: 0.9
+  min_bootstrap_samples: 100
+
 # ── Etapa 4 (governança) ─────────────────────────────────────────────────────
 retention:
   # LGPD: lote bloqueado fica na quarentena só o tempo de a origem corrigir.

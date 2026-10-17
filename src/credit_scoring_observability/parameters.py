@@ -143,6 +143,14 @@ class PerformanceParams(ParamsModel):
     seed: int = Field(default=42, ge=0, strict=True)
 
 
+class GateParams(ParamsModel):
+    """Cobertura mínima para recomendar avaliação de retreinamento."""
+
+    min_labeled_rows: int = Field(default=500, ge=2, strict=True)
+    min_label_coverage: float = Field(default=0.9, gt=0, le=1, allow_inf_nan=False)
+    min_bootstrap_samples: int = Field(default=100, ge=20, strict=True)
+
+
 class PipelineParams(ParamsModel):
     split: SplitParams
     train: TrainParams
@@ -151,6 +159,7 @@ class PipelineParams(ParamsModel):
     simulation: SimulationParams = Field(default_factory=SimulationParams)
     drift: DriftParams = Field(default_factory=DriftParams)
     performance: PerformanceParams = Field(default_factory=PerformanceParams)
+    gate: GateParams = Field(default_factory=GateParams)
 
     @model_validator(mode="after")
     def validate_batch_volume(self) -> PipelineParams:
