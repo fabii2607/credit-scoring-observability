@@ -1,215 +1,599 @@
 {
+  "uid": "credit-scoring-monitoring",
   "title": "Observabilidade - Credit Scoring",
+  "schemaVersion": 38,
+  "version": 1,
   "tags": [
     "mlops",
-    "fase4",
-    "pipeline"
+    "credit-scoring"
   ],
   "timezone": "browser",
-  "refresh": "5s",
+  "refresh": "15s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "panels": [
     {
-      "title": "Status do Pipeline",
+      "id": 1,
+      "title": "Estado do lote: -1 executando / 0 falha / 1 sucesso / 2 bloqueado",
       "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 8,
         "x": 0,
         "y": 0
       },
       "targets": [
         {
-          "expr": "pipeline_stage_status",
-          "legendFormat": "{{batch_id}} - {{stage}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "FALHA"
-                },
-                "1": {
-                  "text": "SUCESSO"
-                }
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "title": "Lotes em Quarentena",
-      "type": "stat",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 0
-      },
-      "targets": [
-        {
-          "expr": "batch_quarantined",
-          "legendFormat": "{{batch_id}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "title": "Viola\u00e7\u00f5es de Contrato (Qualidade de Dados)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 0
-      },
-      "targets": [
-        {
-          "expr": "contract_violations",
-          "legendFormat": "{{rule}} - {{severity}}"
-        }
-      ]
-    },
-    {
-      "title": "Dura\u00e7\u00e3o do Est\u00e1gio (s)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 8
-      },
-      "targets": [
-        {
-          "expr": "pipeline_stage_duration_seconds",
-          "legendFormat": "{{batch_id}} - {{stage}}"
-        }
-      ]
-    },
-    {
-      "title": "Uso de CPU (s)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 8
-      },
-      "targets": [
-        {
-          "expr": "stage_cpu_seconds",
-          "legendFormat": "{{batch_id}} - {{stage}}"
-        }
-      ]
-    },
-    {
-      "title": "Pico de Mem\u00f3ria (Bytes)",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 8
-      },
-      "targets": [
-        {
-          "expr": "stage_memory_peak_bytes",
-          "legendFormat": "{{batch_id}} - {{stage}}"
-        }
-      ]
-    },
-    {
-      "title": "Data Drift (PSI) - Requer Etapa 2",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "targets": [
-        {
-          "expr": "model_psi_score",
-          "legendFormat": "{{feature}}"
-        }
-      ]
-    },
-    {
-      "title": "Performance do Modelo (KS) - Requer Etapa 2",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "targets": [
-        {
-          "expr": "model_ks_score",
-          "legendFormat": "Score"
-        }
-      ]
-    },
-    {
-      "title": "Logs Estruturados do Pipeline",
-      "type": "logs",
-      "datasource": "Loki",
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "targets": [
-        {
-          "expr": "{batch_id=~\"2026-.*\"}"
+          "refId": "A",
+          "expr": "pipeline_batch_status",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
         }
       ],
       "options": {
-        "showTime": true,
-        "showLabels": false,
-        "showCommonLabels": false,
-        "wrapLogMessage": true
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
       }
+    },
+    {
+      "id": 2,
+      "title": "Gate: 0 OK / 1 WARN / 2 ALERT",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "gate_status",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Avaliar retreinamento: 1 recomendado",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "gate_retrain_recommended",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "AUC do modelo e do controle",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "model_roc_auc",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        },
+        {
+          "refId": "B",
+          "expr": "model_reference_roc_auc",
+          "legendFormat": "Controle {{batch_id}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Queda de AUC vs. controle",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "model_auc_drop",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        },
+        {
+          "refId": "B",
+          "expr": "model_auc_drop_ci_low",
+          "legendFormat": "model_auc_drop_ci_low {{batch_id}}"
+        },
+        {
+          "refId": "C",
+          "expr": "model_auc_drop_ci_high",
+          "legendFormat": "model_auc_drop_ci_high {{batch_id}}"
+        },
+        {
+          "refId": "D",
+          "expr": "model_auc_drop_limit",
+          "legendFormat": "model_auc_drop_limit {{batch_id}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Proporção de features com drift",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "drift_share",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "PSI por feature",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "feature_psi",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "KS D por feature",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "feature_ks_d",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "PSI do score",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "score_psi",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Aprovação",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 21
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "approval_rate",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Brier",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 21
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "model_brier",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Registros processados",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 21
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pipeline_rows_processed",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Duração por estágio (s)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 28
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pipeline_stage_duration_seconds",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "CPU por estágio (s)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 28
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "stage_cpu_seconds",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "RSS observado nos limites do estágio (bytes)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 28
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "stage_memory_rss_observed_bytes",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "Violações de contrato",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 35
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "contract_violations",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 17,
+      "title": "Status do estágio: 0 falha / 1 sucesso / 2 bloqueado",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 35
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pipeline_stage_status",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 18,
+      "title": "Último sucesso (Unix timestamp)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 35
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pipeline_last_success_timestamp",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 19,
+      "title": "Logs: trace_id abre o Tempo",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{job=\"credit-scoring-pipeline\"}"
+        }
+      ]
     }
   ]
 }
