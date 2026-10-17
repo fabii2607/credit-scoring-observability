@@ -1,0 +1,107 @@
+[
+  {
+    "name": "RetrainRecommended",
+    "batch_id": "2026-05",
+    "state": "active"
+  },
+  {
+    "name": "ConceptDriftSuspected",
+    "batch_id": "2026-06",
+    "state": "active"
+  },
+  {
+    "name": "LabelDrift",
+    "batch_id": "2026-06",
+    "state": "active"
+  },
+  {
+    "name": "FeatureDriftCritical",
+    "batch_id": "2026-03",
+    "state": "active"
+  },
+  {
+    "name": "FeatureDriftWarning",
+    "batch_id": "2026-03",
+    "state": "active"
+  },
+  {
+    "name": "ConceptDriftSuspected",
+    "batch_id": "2026-07",
+    "state": "active"
+  },
+  {
+    "name": "RetrainRecommended",
+    "batch_id": "2026-06",
+    "state": "active"
+  },
+  {
+    "name": "ConceptDriftSuspected",
+    "batch_id": "2026-05",
+    "state": "active"
+  },
+  {
+    "name": "ContractViolation",
+    "batch_id": "corrupted",
+    "state": "active"
+  },
+  {
+    "name": "FeatureDriftCritical",
+    "batch_id": "2026-04",
+    "state": "active"
+  },
+  {
+    "name": "LabelDrift",
+    "batch_id": "2026-05",
+    "state": "active"
+  },
+  {
+    "name": "FeatureDriftCritical",
+    "batch_id": "2026-04",
+    "state": "active"
+  },
+  {
+    "name": "FeatureDriftCritical",
+    "batch_id": "2026-03",
+    "state": "active"
+  },
+  {
+    "name": "ModelPerformanceDrop",
+    "batch_id": "2026-05",
+    "state": "active"
+  },
+  {
+    "name": "FeatureDriftCritical",
+    "batch_id": "2026-03",
+    "state": "active"
+  },
+  {
+    "name": "FeatureDriftCritical",
+    "batch_id": "2026-04",
+    "state": "active"
+  },
+  {
+    "name": "ModelPerformanceDrop",
+    "batch_id": "2026-06",
+    "state": "active"
+  },
+  {
+    "name": "LabelDrift",
+    "batch_id": "2026-07",
+    "state": "active"
+  },
+  {
+    "name": "ModelPerformanceDrop",
+    "batch_id": "2026-07",
+    "state": "active"
+  },
+  {
+    "name": "RetrainRecommended",
+    "batch_id": "2026-07",
+    "state": "active"
+  },
+  {
+    "name": "FeatureDriftCritical",
+    "batch_id": "2026-04",
+    "state": "active"
+  }
+]

@@ -299,3 +299,6 @@ O método foi validado com o modelo V2 real: num lote com renda, dti, rotativo e
 A [análise consolidada e política do gate](docs/experiment-analysis.md) explica
 como consultar os gráficos em `reports/experiment/`, interpretar os intervalos
 e revisar a recomendação destacada no topo de cada HTML.
+
+A [integração de observabilidade](docs/observability-integration.md) mostra como
+executar os lotes com MLflow, Prometheus, Grafana, Loki e Tempo, incluindo modo local.

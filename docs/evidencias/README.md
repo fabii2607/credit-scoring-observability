@@ -122,3 +122,6 @@ meses não apresentaram features com drift confirmado nesta execução.
 PSI não é aditivo. A intervenção demonstra um efeito sintético nesta amostra,
 sem provar causa econômica. Nenhum modelo foi retreinado ou promovido.
 Consulte a [política do gate](../experiment-analysis.md) para limites e critérios.
+
+A [verificação da observabilidade](observability/README.md) preserva evidências
+de métricas, MLflow, Grafana, logs, traces e recebimento dos alertas na stack.

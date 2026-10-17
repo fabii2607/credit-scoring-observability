@@ -1,0 +1,88 @@
+{
+  "execution_date": "2026-10-17",
+  "batches": [
+    {
+      "batch_id": "corrupted",
+      "status": "blocked",
+      "rows": 2100,
+      "telemetry_status": "success"
+    },
+    {
+      "batch_id": "2026-01",
+      "status": "success",
+      "rows": 10000,
+      "roc_auc": 0.705061464813288,
+      "reference_roc_auc": 0.6974035804539609,
+      "auc_drop": -0.007657884359327127,
+      "gate_status": "OK",
+      "recommended_action": "observe",
+      "telemetry_status": "success"
+    },
+    {
+      "batch_id": "2026-02",
+      "status": "success",
+      "rows": 10000,
+      "roc_auc": 0.7034565687484596,
+      "reference_roc_auc": 0.6974035804539609,
+      "auc_drop": -0.00605298829449874,
+      "gate_status": "OK",
+      "recommended_action": "observe",
+      "telemetry_status": "success"
+    },
+    {
+      "batch_id": "2026-03",
+      "status": "success",
+      "rows": 10000,
+      "roc_auc": 0.6962755195120711,
+      "reference_roc_auc": 0.6974035804539609,
+      "auc_drop": 0.0011280609418897747,
+      "gate_status": "WARN",
+      "recommended_action": "reinforced_monitoring",
+      "telemetry_status": "success"
+    },
+    {
+      "batch_id": "2026-04",
+      "status": "success",
+      "rows": 10000,
+      "roc_auc": 0.6995199360220629,
+      "reference_roc_auc": 0.6974035804539609,
+      "auc_drop": -0.0021163555681019686,
+      "gate_status": "WARN",
+      "recommended_action": "reinforced_monitoring",
+      "telemetry_status": "success"
+    },
+    {
+      "batch_id": "2026-05",
+      "status": "success",
+      "rows": 10000,
+      "roc_auc": 0.6181136585063427,
+      "reference_roc_auc": 0.6974035804539609,
+      "auc_drop": 0.07928992194761819,
+      "gate_status": "ALERT",
+      "recommended_action": "retrain",
+      "telemetry_status": "success"
+    },
+    {
+      "batch_id": "2026-06",
+      "status": "success",
+      "rows": 10000,
+      "roc_auc": 0.5993255897231639,
+      "reference_roc_auc": 0.6974035804539609,
+      "auc_drop": 0.09807799073079704,
+      "gate_status": "ALERT",
+      "recommended_action": "retrain",
+      "telemetry_status": "success"
+    },
+    {
+      "batch_id": "2026-07",
+      "status": "success",
+      "rows": 10000,
+      "roc_auc": 0.5589204874551972,
+      "reference_roc_auc": 0.6974035804539609,
+      "auc_drop": 0.1384830929987637,
+      "gate_status": "ALERT",
+      "recommended_action": "retrain",
+      "telemetry_status": "success"
+    }
+  ]
+}
