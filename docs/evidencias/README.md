@@ -1,6 +1,6 @@
 # Evidências de monitoramento
 
-Seleção pública dos resultados da execução de **16/10/2026**, organizada em
+Seleção pública dos resultados da execução de **17/10/2026**, organizada em
 17/10/2026. Os relatórios completos são gerados localmente em `reports/`;
 esta pasta preserva uma amostra revisada para avaliação no GitHub.
 
@@ -38,7 +38,7 @@ provenientes do treino e não é usada como baseline de AUC.
 
 - Janeiro–fevereiro: nenhuma feature com drift confirmado e nenhuma queda de AUC acima de 0,05.
 - Março–abril: drift nas features alteradas, com performance próxima à do controle.
-- Maio–julho: queda de AUC acima de 0,05 sem drift confirmado nas distribuições marginais de X. Esse é o comportamento esperado do relabel sintético; o HTML de junho mostra estabilidade de X, enquanto seu JSON de performance documenta a degradação.
+- Maio–julho: queda de AUC acima de 0,05 sem drift confirmado nas distribuições marginais de X. Esse é o comportamento esperado do relabel sintético; o HTML de junho mostra estabilidade de X, e a degradação de performance no início do HTML e no JSON.
 
 A tabela completa, incluindo intervalos de AUC, aprovação, prevalência e estado
 do lote corrompido, está em [CSV](performance/summary.csv) e
@@ -95,3 +95,30 @@ use `make analyze` (exit 0). Uma nova execução não atualiza automaticamente e
 pasta: revise os resultados, substitua a seleção e atualize o manifesto juntos.
 A reprodução numérica pode sofrer pequenas diferenças entre ambientes; os hashes
 identificam precisamente os artefatos desta execução.
+
+
+## Gate e comparação pareada
+
+Os HTMLs selecionados exibem a recomendação no topo, antes das métricas e
+dos gráficos Evidently. O [experimento consolidado](experiment/summary.md)
+reúne os sete meses, gráficos de AUC/intervalos e comparações antes/depois.
+
+| Meses | Gate | Recomendação |
+|---|---|---|
+| Janeiro–fevereiro | OK | Monitoramento regular |
+| Março–abril | WARN | Investigar entradas e reforçar monitoramento |
+| Maio–julho | ALERT | Investigar degradação e avaliar retreinamento |
+
+Os JSONs de [janeiro](gate/2026-01.json), [abril](gate/2026-04.json) e
+[junho](gate/2026-06.json) registram os motivos. As comparações pareadas de
+[janeiro](intervention/2026-01.json), [abril](intervention/2026-04.json) e
+[junho](intervention/2026-06.json) preservam os resultados agregados dos mesmos
+registros antes/depois.
+
+A queda pareada em maio/junho/julho foi de 0,0649 / 0,0906 / 0,1301.
+A diferença contra o controle inclui também diferenças entre amostras; por isso,
+não deve ser atribuída integralmente à intervenção. Os originais dos sete
+meses não apresentaram features com drift confirmado nesta execução.
+PSI não é aditivo. A intervenção demonstra um efeito sintético nesta amostra,
+sem provar causa econômica. Nenhum modelo foi retreinado ou promovido.
+Consulte a [política do gate](../experiment-analysis.md) para limites e critérios.
