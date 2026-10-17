@@ -88,13 +88,23 @@ def test_months_are_scored_after_blocked_demo_and_reports_have_no_ids(
     )
     assert [o["status"] for o in outcomes] == ["blocked", "success", "success"]
     assert (
-        score.call_count == 4
-    )  # referência, controle, dois meses; corrupted não pontuado.
+        score.call_count == 6
+    )  # referência, controle, dois meses e seus originais; corrupted não pontuado.
     for month in ["2026-01", "2026-05"]:
         scored = pd.read_parquet(tmp_path / "interim" / month / "scored.parquet")
         assert {"score", "prediction"} <= set(scored)
         assert (reports / "drift" / f"{month}.html").exists()
         assert (reports / "performance" / f"{month}.json").exists()
+        gate = json.loads((reports / "gate" / f"{month}.json").read_text())
+        drift = json.loads((reports / "drift" / f"{month}.json").read_text())
+        assert drift["gate"] == {k: v for k, v in gate.items() if k != "context"}
+        html = (reports / "drift" / f"{month}.html").read_text()
+        assert html.index('id="credit-gate"') < html.index('id="credit-performance"')
+        assert gate["recommendation"] in html
+        assert not gate["retrain_recommended"]  # bootstrap desabilitado
+        assert (reports / "intervention" / f"{month}.json").exists()
+    assert (reports / "experiment" / "auc_effects.png").exists()
+    assert (reports / "experiment" / "features.csv").exists()
     assert (reports / "performance" / "summary.csv").exists()
     for path in [*(reports / "drift").glob("*"), *(reports / "performance").glob("*")]:
         text = path.read_text()

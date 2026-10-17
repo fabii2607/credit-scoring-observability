@@ -1,7 +1,7 @@
 """Predições, relatórios de drift e performance dos meses simulados.
 
 CLI: python -m credit_scoring_observability.analyze [--include-corrupted]
-Não promove modelos nem recomenda retreino automaticamente.
+Emite recomendações operacionais; não treina nem promove modelos.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from credit_scoring_observability.comparison import compare_intervention
 from credit_scoring_observability.config import (
     DATA_DIR,
     ID_COLUMN,
@@ -30,9 +31,12 @@ from credit_scoring_observability.drift_report import (
     write_drift_report,
     write_json,
 )
+from credit_scoring_observability.experiment import write_experiment
+from credit_scoring_observability.gate import evaluate_gate
 from credit_scoring_observability.logger import get_logger, setup_logging
 from credit_scoring_observability.parameters import (
     DriftParams,
+    GateParams,
     PerformanceParams,
     get_params,
 )
@@ -81,6 +85,11 @@ def analyze_batch(
     performance_params: PerformanceParams | None = None,
     context: dict | None = None,
     expected_sha256: str | None = None,
+    original_path: Path | None = None,
+    expected_original_sha256: str | None = None,
+    scenario: str = "unknown",
+    intensity: float | None = None,
+    gate_params: GateParams | None = None,
 ) -> dict:
     """Executa um lote, devolvendo blocked/failed sem interromper os seguintes.
 
@@ -101,6 +110,9 @@ def analyze_batch(
         reports_dir / "drift" / f"{batch_id}.html",
         reports_dir / "drift" / f"{batch_id}.json",
         reports_dir / "performance" / f"{batch_id}.json",
+        reports_dir / "gate" / f"{batch_id}.json",
+        reports_dir / "intervention" / f"{batch_id}.json",
+        work / "original_scored.parquet",
     ]
     for output in outputs:
         output.unlink(missing_ok=True)
@@ -127,6 +139,18 @@ def analyze_batch(
             control_scored[ID_COLUMN]
         ):
             raise ValueError("Lote compartilha identificadores com referência/controle")
+        original = None
+        if original_path is not None:
+            if (
+                expected_original_sha256 is None
+                or file_digest(original_path) != expected_original_sha256
+            ):
+                raise ValueError("Original difere do manifesto")
+            original = pd.read_parquet(original_path)
+            if not validate_batch(original, batch_id + "_original").passed:
+                raise ValueError("Original inválido para comparação")
+            if not original[ID_COLUMN].equals(frame[ID_COLUMN]):
+                raise ValueError("Original e lote não estão pareados na mesma ordem")
         # enforce já aprovou o lote completo; score aplica adicionalmente o schema de features.
         scored = model.score(frame)
         work.mkdir(parents=True, exist_ok=True)
@@ -141,6 +165,32 @@ def analyze_batch(
             baseline_source="reserves/control.parquet (fora do treino)",
         )
         batch_context = {**context, "batch_sha256": source_sha}
+        comparison = None
+        if original is not None:
+            original_scored = model.score(original)
+            comparison = compare_intervention(
+                reference_scored,
+                control_scored,
+                original_scored,
+                scored,
+                drift,
+                perf,
+                scenario,
+                model.threshold,
+                drift_params,
+                performance_params,
+            )
+            original_scored.to_parquet(work / "original_scored.parquet", index=False)
+            batch_context["original_sha256"] = expected_original_sha256
+            write_json(
+                reports_dir / "intervention" / f"{batch_id}.json",
+                {**comparison.to_dict(), "context": batch_context},
+            )
+        gate = evaluate_gate(drift, perf, gate_params, performance_params, drift_params)
+        write_json(
+            reports_dir / "gate" / f"{batch_id}.json",
+            {**gate.to_dict(), "context": batch_context},
+        )
         write_drift_report(
             reference_scored,
             scored,
@@ -148,6 +198,9 @@ def analyze_batch(
             reports_dir / "drift",
             drift_params,
             batch_context,
+            gate=gate,
+            performance=perf,
+            comparison=comparison,
         )
         write_json(
             reports_dir / "performance" / f"{batch_id}.json",
@@ -163,9 +216,30 @@ def analyze_batch(
             "status": "success",
             **asdict(perf),
             "drift_share": drift.drift_share,
+            "analyzed_features": drift.analyzed_features,
             "drifted_features": ",".join(drift.drifted_features),
             "score_psi": drift.score_psi,
             "label_z": drift.label_z,
+            "scenario": scenario,
+            "intensity": intensity,
+            "gate_status": gate.status,
+            "gate_diagnosis": gate.diagnosis,
+            "recommended_action": gate.recommended_action,
+            "recommendation": gate.recommendation,
+            "gate_reasons": " | ".join(gate.reasons),
+            "original_roc_auc": comparison.original_performance.get("roc_auc")
+            if comparison
+            else None,
+            "original_drift_share": comparison.original_drift_share
+            if comparison
+            else None,
+            "paired_auc_drop": comparison.paired_auc_drop if comparison else None,
+            "paired_auc_drop_ci_low": comparison.paired_auc_drop_ci_low
+            if comparison
+            else None,
+            "paired_auc_drop_ci_high": comparison.paired_auc_drop_ci_high
+            if comparison
+            else None,
         }
     except ContractViolationError:
         outcome = {
@@ -251,6 +325,11 @@ def run(
             for name in ("evidently", "scikit-learn", "numpy", "pandas", "scipy")
         },
         "python": platform.python_version(),
+        "gate_parameters": params.gate.model_dump(mode="json"),
+        "drift_parameters": params.drift.model_dump(mode="json"),
+        "performance_parameters": (performance_params or params.performance).model_dump(
+            mode="json"
+        ),
         "implementation_sha256": {
             name: file_digest(Path(__file__).with_name(name))
             for name in (
@@ -260,6 +339,9 @@ def run(
                 "performance.py",
                 "stats.py",
                 "results.py",
+                "comparison.py",
+                "gate.py",
+                "experiment.py",
             )
         },
     }
@@ -277,7 +359,10 @@ def run(
         scored.to_parquet(destination / "scored.parquet", index=False)
         write_json(destination / "metadata.json", context)
     outcomes = []
+    batches = {b["batch_id"]: b for b in manifest["batches"]}
     for batch_id in batch_ids:
+        item = batches.get(batch_id)
+        original_relative = f"originals/{batch_id}.parquet"
         outcome = analyze_batch(
             production_dir / f"{batch_id}.parquet",
             model,
@@ -290,6 +375,13 @@ def run(
             performance_params or params.performance,
             context,
             manifest["artifacts"][f"{batch_id}.parquet"]["sha256"],
+            original_path=production_dir / original_relative if item else None,
+            expected_original_sha256=manifest["artifacts"][original_relative]["sha256"]
+            if item
+            else None,
+            scenario=item["scenario"] if item else "contract_demo",
+            intensity=item["intensity"] if item else None,
+            gate_params=params.gate,
         )
         outcomes.append(outcome)
         logger.info("lote analisado", batch_id=batch_id, status=outcome["status"])
@@ -300,6 +392,7 @@ def run(
     pd.DataFrame(outcomes).to_csv(
         reports_dir / "performance" / "summary.csv", index=False
     )
+    write_experiment(outcomes, reports_dir, context)
     return outcomes
 
 
