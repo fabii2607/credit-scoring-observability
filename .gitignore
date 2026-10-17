@@ -47,3 +47,6 @@ reports/performance/
 reports/gate/
 reports/intervention/
 reports/experiment/
+
+# Execuções instrumentadas e evidências locais de telemetria
+reports/monitoring/
