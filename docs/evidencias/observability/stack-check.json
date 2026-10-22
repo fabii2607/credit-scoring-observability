@@ -4,6 +4,8 @@
   "batches": [
     {
       "batch_id": "corrupted",
+      "mlflow_run_id": "689d1aa8116b4140be833d2563d647ac",
+      "trace_id": "36284d82ed4182db4b962603e6e5a4ea",
       "status": "blocked",
       "metrics_match": true,
       "mlflow_verified": true,
@@ -12,6 +14,8 @@
     },
     {
       "batch_id": "2026-01",
+      "mlflow_run_id": "e29d16d2edf8471fb40a14106bc3b022",
+      "trace_id": "427c95e5525087d7cc1838c02f277e5e",
       "status": "success",
       "metrics_match": true,
       "mlflow_verified": true,
@@ -20,6 +24,8 @@
     },
     {
       "batch_id": "2026-02",
+      "mlflow_run_id": "8efff943a2a2412693e59b03c585b787",
+      "trace_id": "aa84e2acf2081c53df17ac42f03f2470",
       "status": "success",
       "metrics_match": true,
       "mlflow_verified": true,
@@ -28,6 +34,8 @@
     },
     {
       "batch_id": "2026-03",
+      "mlflow_run_id": "0e71de416b204f40bc7a3a74b04aa6ad",
+      "trace_id": "aba021b382361326c8b5d5686f1358a0",
       "status": "success",
       "metrics_match": true,
       "mlflow_verified": true,
@@ -36,6 +44,8 @@
     },
     {
       "batch_id": "2026-04",
+      "mlflow_run_id": "50c5553b0a4c43b5b1a53e8440c9b4ed",
+      "trace_id": "72b4977205eb4726137d574619501532",
       "status": "success",
       "metrics_match": true,
       "mlflow_verified": true,
@@ -44,6 +54,8 @@
     },
     {
       "batch_id": "2026-05",
+      "mlflow_run_id": "29bc129f315a437887eb5c2845df264b",
+      "trace_id": "28023c08506fb09894a7fadbfd710e8e",
       "status": "success",
       "metrics_match": true,
       "mlflow_verified": true,
@@ -52,6 +64,8 @@
     },
     {
       "batch_id": "2026-06",
+      "mlflow_run_id": "81a85e0bc8354bb9b8f31522b387bedc",
+      "trace_id": "e9fb3c3d3b93f52d7e37fe685c8dc84e",
       "status": "success",
       "metrics_match": true,
       "mlflow_verified": true,
@@ -60,6 +74,8 @@
     },
     {
       "batch_id": "2026-07",
+      "mlflow_run_id": "b562e7a3ad1e4261a664f47549c61567",
+      "trace_id": "a4cbf703e7337c71065ea7c6af9440d8",
       "status": "success",
       "metrics_match": true,
       "mlflow_verified": true,
@@ -75,21 +91,6 @@
     },
     {
       "name": "FeatureDriftCritical",
-      "batch_id": "2026-04",
-      "state": "pending"
-    },
-    {
-      "name": "FeatureDriftCritical",
-      "batch_id": "2026-04",
-      "state": "pending"
-    },
-    {
-      "name": "FeatureDriftCritical",
-      "batch_id": "2026-03",
-      "state": "firing"
-    },
-    {
-      "name": "FeatureDriftCritical",
       "batch_id": "2026-03",
       "state": "firing"
     },
@@ -101,12 +102,27 @@
     {
       "name": "FeatureDriftCritical",
       "batch_id": "2026-04",
-      "state": "pending"
+      "state": "firing"
     },
     {
       "name": "FeatureDriftCritical",
       "batch_id": "2026-04",
-      "state": "pending"
+      "state": "firing"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-04",
+      "state": "firing"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-04",
+      "state": "firing"
+    },
+    {
+      "name": "FeatureDriftCritical",
+      "batch_id": "2026-03",
+      "state": "firing"
     },
     {
       "name": "FeatureDriftWarning",
@@ -115,63 +131,63 @@
     },
     {
       "name": "ModelPerformanceDrop",
-      "batch_id": "2026-07",
-      "state": "pending"
-    },
-    {
-      "name": "ModelPerformanceDrop",
       "batch_id": "2026-05",
-      "state": "pending"
+      "state": "firing"
     },
     {
       "name": "ModelPerformanceDrop",
       "batch_id": "2026-06",
-      "state": "pending"
+      "state": "firing"
+    },
+    {
+      "name": "ModelPerformanceDrop",
+      "batch_id": "2026-07",
+      "state": "firing"
     },
     {
       "name": "ConceptDriftSuspected",
       "batch_id": "2026-05",
-      "state": "pending"
+      "state": "firing"
     },
     {
       "name": "ConceptDriftSuspected",
       "batch_id": "2026-06",
-      "state": "pending"
+      "state": "firing"
     },
     {
       "name": "ConceptDriftSuspected",
       "batch_id": "2026-07",
-      "state": "pending"
+      "state": "firing"
     },
     {
       "name": "LabelDrift",
       "batch_id": "2026-07",
-      "state": "pending"
+      "state": "firing"
     },
     {
       "name": "LabelDrift",
       "batch_id": "2026-05",
-      "state": "pending"
+      "state": "firing"
     },
     {
       "name": "LabelDrift",
       "batch_id": "2026-06",
-      "state": "pending"
+      "state": "firing"
+    },
+    {
+      "name": "RetrainRecommended",
+      "batch_id": "2026-05",
+      "state": "firing"
+    },
+    {
+      "name": "RetrainRecommended",
+      "batch_id": "2026-06",
+      "state": "firing"
     },
     {
       "name": "RetrainRecommended",
       "batch_id": "2026-07",
-      "state": "pending"
-    },
-    {
-      "name": "RetrainRecommended",
-      "batch_id": "2026-05",
-      "state": "pending"
-    },
-    {
-      "name": "RetrainRecommended",
-      "batch_id": "2026-06",
-      "state": "pending"
+      "state": "firing"
     }
   ]
 }

@@ -89,6 +89,8 @@ def check(reports: Path, mlflow_uri: str):
         checks.append(
             {
                 "batch_id": batch,
+                "mlflow_run_id": row["mlflow_run_id"],
+                "trace_id": trace_id,
                 "status": row["status"],
                 "metrics_match": True,
                 "mlflow_verified": True,
@@ -110,6 +112,18 @@ def check(reports: Path, mlflow_uri: str):
             for a in alerts
         ],
     }
+    received = get("http://localhost:9093/api/v2/alerts").json()
+    public_alerts = [
+        {
+            "name": a["labels"]["alertname"],
+            "batch_id": a["labels"].get("batch_id"),
+            "state": a["status"]["state"],
+        }
+        for a in received
+    ]
+    (reports / "monitoring/alertmanager-check.json").write_text(
+        json.dumps(public_alerts, ensure_ascii=False, indent=2) + "\n"
+    )
     output = reports / "monitoring/stack-check.json"
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(

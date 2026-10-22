@@ -34,7 +34,7 @@
       "seed": 42
     },
     "implementation_sha256": {
-      "analyze.py": "356fe4a8a814839b8de00a6b314c8c6de842a5bf5b897284a416367acbf95afc",
+      "analyze.py": "fce091fc0a18ad01663f3a80270b27a1bcdc3a3f1493fde3e4e28a4dcac41a6a",
       "drift.py": "21b49363da2f27691ee62734c6a8545ad5400c397a4406fa77f292a8340cde60",
       "drift_report.py": "76e089a9a9f74a85adee755eb4a7b122dd1da3e7284089f8c9869f0a81e40acf",
       "performance.py": "73dab896e25b7a83c642f279b462e8a2708d7be09baa3f74f1f99a3d9680fea7",
@@ -44,10 +44,26 @@
       "gate.py": "6ffec034ebad8e4395ae8f14a90e1d12a0dd9771d4ce46444b551a1cb4c32d85",
       "experiment.py": "5ef4bd05ebcab87bfac54580c1070d0af10d6f8220f25f617212fdc012c419e0"
     },
+    "observability_sha256": {
+      "observation.py": "c363e2cc85e96070291522d0757ed1d61660838bb5064e9ef1de7145e68007cb",
+      "metrics.py": "09f4ad8ad3c51364cb892d12ab17206f57e2494d0444bb30c082f0fe9dfef4e3",
+      "stages.py": "8eadac313929666007992d68d5d1dd9f140b19fdf98237d0dc23b1ad445feb9c",
+      "tracing.py": "2501b36d609a12f6cabe0ef56cbf476078923ab0aacf931a049bc09effe53ec8",
+      "run_batch.py": "11eb137d89bd06c2185e319fe507e59199d089da9ef6b62079c1e872b5505012",
+      "run_all.py": "08781d7cd46c172bcb3a8c9e437613554512a5df3d065f0235d327f2c3dae18c"
+    },
     "model_sha256": "86aede0009614a35796822fe01764b5e5646074c482e5398e86be0174f6d3442",
     "metadata_sha256": "eb05a610a5875ca8a35afe984c42ae3c64b142f849fd77b7cedbd4c689326043"
   },
   "batches": [
+    {
+      "batch_id": "corrupted",
+      "status": "blocked",
+      "rows": 2100,
+      "error_type": "ContractViolationError",
+      "mlflow_run_id": "689d1aa8116b4140be833d2563d647ac",
+      "telemetry_status": "success"
+    },
     {
       "batch_id": "2026-01",
       "status": "success",
@@ -92,7 +108,9 @@
       "original_drift_share": 0.0,
       "paired_auc_drop": 0.0,
       "paired_auc_drop_ci_low": 0.0,
-      "paired_auc_drop_ci_high": 0.0
+      "paired_auc_drop_ci_high": 0.0,
+      "mlflow_run_id": "e29d16d2edf8471fb40a14106bc3b022",
+      "telemetry_status": "success"
     },
     {
       "batch_id": "2026-02",
@@ -138,7 +156,9 @@
       "original_drift_share": 0.0,
       "paired_auc_drop": 0.0,
       "paired_auc_drop_ci_low": 0.0,
-      "paired_auc_drop_ci_high": 0.0
+      "paired_auc_drop_ci_high": 0.0,
+      "mlflow_run_id": "8efff943a2a2412693e59b03c585b787",
+      "telemetry_status": "success"
     },
     {
       "batch_id": "2026-03",
@@ -184,7 +204,9 @@
       "original_drift_share": 0.0,
       "paired_auc_drop": -0.0014062713288892636,
       "paired_auc_drop_ci_low": -0.002793320046685291,
-      "paired_auc_drop_ci_high": 0.00013126822591892366
+      "paired_auc_drop_ci_high": 0.00013126822591892366,
+      "mlflow_run_id": "0e71de416b204f40bc7a3a74b04aa6ad",
+      "telemetry_status": "success"
     },
     {
       "batch_id": "2026-04",
@@ -230,7 +252,9 @@
       "original_drift_share": 0.0,
       "paired_auc_drop": -0.002539012756084813,
       "paired_auc_drop_ci_low": -0.004888388675394081,
-      "paired_auc_drop_ci_high": -0.00024854952315131674
+      "paired_auc_drop_ci_high": -0.00024854952315131674,
+      "mlflow_run_id": "50c5553b0a4c43b5b1a53e8440c9b4ed",
+      "telemetry_status": "success"
     },
     {
       "batch_id": "2026-05",
@@ -276,7 +300,9 @@
       "original_drift_share": 0.0,
       "paired_auc_drop": 0.06486371765121868,
       "paired_auc_drop_ci_low": 0.057665420396405084,
-      "paired_auc_drop_ci_high": 0.07206186110570345
+      "paired_auc_drop_ci_high": 0.07206186110570345,
+      "mlflow_run_id": "29bc129f315a437887eb5c2845df264b",
+      "telemetry_status": "success"
     },
     {
       "batch_id": "2026-06",
@@ -322,7 +348,9 @@
       "original_drift_share": 0.0,
       "paired_auc_drop": 0.09061726884896126,
       "paired_auc_drop_ci_low": 0.08222224579203741,
-      "paired_auc_drop_ci_high": 0.10016314658271033
+      "paired_auc_drop_ci_high": 0.10016314658271033,
+      "mlflow_run_id": "81a85e0bc8354bb9b8f31522b387bedc",
+      "telemetry_status": "success"
     },
     {
       "batch_id": "2026-07",
@@ -368,13 +396,9 @@
       "original_drift_share": 0.0,
       "paired_auc_drop": 0.1300540354053359,
       "paired_auc_drop_ci_low": 0.11936693139019891,
-      "paired_auc_drop_ci_high": 0.1400118177377851
-    },
-    {
-      "batch_id": "corrupted",
-      "status": "blocked",
-      "rows": 2100,
-      "error_type": "ContractViolationError"
+      "paired_auc_drop_ci_high": 0.1400118177377851,
+      "mlflow_run_id": "b562e7a3ad1e4261a664f47549c61567",
+      "telemetry_status": "success"
     }
   ],
   "scenario_checks": [

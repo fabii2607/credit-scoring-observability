@@ -1,22 +1,25 @@
 {
-  "execution_date": "2026-10-17",
-  "timezone": "America/Sao_Paulo",
+  "execution_date": "2026-10-21",
+  "parent_manifest": "../manifest.json",
   "artifacts": {
     "stack-check.json": {
       "source": "reports/monitoring/stack-check.json",
-      "sha256": "a47d877812d2c7490d2fb14422ad0ca0b719a3cf4b8865c64714feb2572bc60a",
-      "source_sha256": "a47d877812d2c7490d2fb14422ad0ca0b719a3cf4b8865c64714feb2572bc60a"
+      "source_sha256": "b78cbce0697c33449a926916138740291b355de334f1025e561426efcc1f755e",
+      "sha256": "b78cbce0697c33449a926916138740291b355de334f1025e561426efcc1f755e",
+      "bytes": 4665
     },
     "alertmanager-check.json": {
       "source": "reports/monitoring/alertmanager-check.json",
+      "source_sha256": "051687fc2fa2a8e8dd5da802e9a820a67e806c67352c21db68a524e84b62239a",
       "sha256": "051687fc2fa2a8e8dd5da802e9a820a67e806c67352c21db68a524e84b62239a",
-      "source_sha256": "051687fc2fa2a8e8dd5da802e9a820a67e806c67352c21db68a524e84b62239a"
+      "bytes": 1942
     },
     "run-summary.json": {
       "source": "reports/monitoring/summary.json",
-      "source_sha256": "cd6cf7e576d7357ecb433c6397c5a33f5b30680261de5560122659b647fad5e0",
-      "sha256": "ea68e9d88189ac1a82d76849c4186dc824ff6acecc0c544a7e478424239fca24",
-      "transformation": "Sele\u00e7\u00e3o de campos agregados; detalhes de execu\u00e7\u00e3o preservados somente localmente."
+      "source_sha256": "d717f0d47f5d0901dd14b6f6ce9d087683b388dd93dd2bd028959cd4dc7b4959",
+      "sha256": "0a8248d490ac85ebf3e3784adcdb4f5386865a2e2ec086c37f49de24054bf4d9",
+      "bytes": 2435,
+      "transformation": "Somente campos agregados da execução."
     }
   }
 }
