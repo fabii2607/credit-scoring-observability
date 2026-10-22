@@ -28,7 +28,9 @@ def monitor(
     reports_dir=REPORTS_DIR,
     **analysis_options,
 ):
-    manifest = json.loads((production_dir / "manifest.json").read_text())
+    manifest = json.loads(
+        (production_dir / "manifest.json").read_text(encoding="utf-8")
+    )
     batches = (
         list(batch_ids)
         if batch_ids is not None
@@ -65,7 +67,9 @@ def monitor(
     for row in outcomes:
         if row["status"] == "success":
             context = json.loads(
-                (reports_dir / "drift" / f"{row['batch_id']}.json").read_text()
+                (reports_dir / "drift" / f"{row['batch_id']}.json").read_text(
+                    encoding="utf-8"
+                )
             )["context"]
             context = {
                 k: v

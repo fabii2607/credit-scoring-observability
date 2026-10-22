@@ -83,7 +83,7 @@ def test_purge_removes_only_expired(tmp_path):
     recent = tmp_path / "2026-03.csv"
     other = tmp_path / "notes.txt"
     for path in (old, recent, other):
-        path.write_text("x")
+        path.write_text("x", encoding="utf-8")
     os.utime(old, (now - 40 * 86_400, now - 40 * 86_400))
     os.utime(other, (now - 40 * 86_400, now - 40 * 86_400))
 

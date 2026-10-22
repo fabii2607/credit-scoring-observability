@@ -118,8 +118,8 @@ def test_html_and_json_use_only_allowed_columns_and_strict_aggregate_data(
     scored["region"] = "PRIVATE_REGION"
     result = detect_drift(scored, changed, "2026-03")
     paths = write_drift_report(scored, changed, result, tmp_path)
-    html = (tmp_path / "2026-03.html").read_text()
-    summary = json.loads((tmp_path / "2026-03.json").read_text())
+    html = (tmp_path / "2026-03.html").read_text(encoding="utf-8")
+    summary = json.loads((tmp_path / "2026-03.json").read_text(encoding="utf-8"))
     assert "Evidently" in html
     assert "credit-summary" in html
     assert "PRIVATE_" not in html
@@ -132,7 +132,9 @@ def test_html_and_json_use_only_allowed_columns_and_strict_aggregate_data(
 def test_report_with_no_observations_is_explicitly_unavailable(scored, tmp_path):
     result = detect_drift(scored, scored.iloc[:0], "empty")
     write_drift_report(scored, scored.iloc[:0], result, tmp_path)
-    assert "Sem distribuições observadas" in (tmp_path / "empty.html").read_text()
+    assert "Sem distribuições observadas" in (tmp_path / "empty.html").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_report_rejects_path_traversal(scored, tmp_path):

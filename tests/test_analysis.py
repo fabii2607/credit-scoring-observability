@@ -20,7 +20,7 @@ def test_invalid_row_blocks_whole_batch_before_inference_and_clears_stale_output
     interim = tmp_path / "interim"
     work = interim / "bad"
     work.mkdir(parents=True)
-    (work / "scored.parquet").write_text("stale")
+    (work / "scored.parquet").write_text("stale", encoding="utf-8")
     model = Mock()
     result = analyze_batch(
         path,
@@ -36,7 +36,9 @@ def test_invalid_row_blocks_whole_batch_before_inference_and_clears_stale_output
     assert not (work / "scored.parquet").exists()
     assert not path.exists()
     assert (tmp_path / "quarantine" / "bad.parquet").exists()
-    report = json.loads((tmp_path / "reports" / "contracts" / "bad.json").read_text())
+    report = json.loads(
+        (tmp_path / "reports" / "contracts" / "bad.json").read_text(encoding="utf-8")
+    )
     assert not report["passed"]
 
 
@@ -95,10 +97,14 @@ def test_months_are_scored_after_blocked_demo_and_reports_have_no_ids(
         assert {"score", "prediction"} <= set(scored)
         assert (reports / "drift" / f"{month}.html").exists()
         assert (reports / "performance" / f"{month}.json").exists()
-        gate = json.loads((reports / "gate" / f"{month}.json").read_text())
-        drift = json.loads((reports / "drift" / f"{month}.json").read_text())
+        gate = json.loads(
+            (reports / "gate" / f"{month}.json").read_text(encoding="utf-8")
+        )
+        drift = json.loads(
+            (reports / "drift" / f"{month}.json").read_text(encoding="utf-8")
+        )
         assert drift["gate"] == {k: v for k, v in gate.items() if k != "context"}
-        html = (reports / "drift" / f"{month}.html").read_text()
+        html = (reports / "drift" / f"{month}.html").read_text(encoding="utf-8")
         assert html.index('id="credit-gate"') < html.index('id="credit-performance"')
         assert gate["recommendation"] in html
         assert not gate["retrain_recommended"]  # bootstrap desabilitado
@@ -107,6 +113,6 @@ def test_months_are_scored_after_blocked_demo_and_reports_have_no_ids(
     assert (reports / "experiment" / "features.csv").exists()
     assert (reports / "performance" / "summary.csv").exists()
     for path in [*(reports / "drift").glob("*"), *(reports / "performance").glob("*")]:
-        text = path.read_text()
+        text = path.read_text(encoding="utf-8")
         assert not any(identifier in text for identifier in pool.customer_id)
         assert not any(identifier in text for identifier in reference.customer_id)

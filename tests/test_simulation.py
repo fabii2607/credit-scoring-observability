@@ -213,14 +213,16 @@ def test_generate_persists_reproducible_artifacts_and_manifest(
     reference.to_parquet(reference_path, index=False)
     output = tmp_path / "production"
     manifest = generate(pool_path, reference_path, output, PARAMS)
-    assert json.loads((output / "manifest.json").read_text()) == manifest
+    assert (
+        json.loads((output / "manifest.json").read_text(encoding="utf-8")) == manifest
+    )
     for path, info in manifest["artifacts"].items():
         assert file_digest(output / path) == info["sha256"]
         assert len(pd.read_parquet(output / path)) == info["rows"]
     again = generate(pool_path, reference_path, output, PARAMS)
     assert again == manifest
     assert manifest["sources"]["pool"]["sha256"] == file_digest(pool_path)
-    manifest_text = (output / "manifest.json").read_text()
+    manifest_text = (output / "manifest.json").read_text(encoding="utf-8")
     assert not any(identifier in manifest_text for identifier in pool[ID_COLUMN])
     assert not any(identifier in manifest_text for identifier in reference[ID_COLUMN])
 
