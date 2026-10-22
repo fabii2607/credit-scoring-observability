@@ -36,6 +36,32 @@ Valores de modelo são snapshots por lote; não são contadores acumulados.
 Lote bloqueado não publica AUC ou gate. Falha no envio remoto preserva .prom local,
 mas precisa ser investigada. Verificar resumo de entrega, além do status da análise.
 
+## SLIs e SLOs
+
+Os SLOs valem para os lotes mensais (2026-01 a 2026-07 na execução de referência, meses sintéticos executados em 21/10/2026).
+A demo `corrupted` é bloqueio intencional do contrato e fica fora do denominador; nas expressões abaixo ela é excluída por `batch_id!="corrupted"`.
+As métricas são snapshots por `batch_id` no Pushgateway, sem janela temporal natural: os SLIs de proporção são "lotes conformes / lotes finalizados no snapshot" (status 0, 1 ou 2; -1 é lote em execução e não entra).
+
+| SLO | SLI (PromQL) | Alerta que cobre | Parâmetro | Observado na execução de referência (21/10/2026) |
+|---|---|---|---|---|
+| Sucesso do pipeline ≥ 95% dos lotes | `count(pipeline_batch_status{batch_id!="corrupted"} == 1) / count(pipeline_batch_status{batch_id!="corrupted"} >= 0)` | nenhum: alertas por lote (PipelineStageFailed dispara por estágio com status 0) | sem chave em `params.yaml` | 7/7 meses com sucesso = 100%; nenhuma falha |
+| Rejeição pelo contrato < 5% dos lotes mensais | `sum(batch_quarantined{batch_id!="corrupted"}) / count(batch_quarantined{batch_id!="corrupted"})` | nenhum: alertas por lote (ContractViolation dispara por `batch_quarantined == 1`) | sem chave em `params.yaml` | 0/7 meses bloqueados = 0%; a demo `corrupted` foi bloqueada por desenho (1/1) |
+| Queda de AUC ≤ 0,05 contra o controle, por lote | Lotes violadores: `model_auc_drop > on(batch_id) model_auc_drop_limit`; pior caso: `max(model_auc_drop)` | ModelPerformanceDrop | `performance.auc_drop` = 0,05 em `params.yaml`, publicado como `model_auc_drop_limit` | Violado em 3/7 meses: 2026-05 +0,0793, 2026-06 +0,0981, 2026-07 +0,1385; é o incidente do [post-mortem](postmortem.md) |
+| Freshness < 35 dias desde o último sucesso | `(time() - max(pipeline_last_success_timestamp)) / 86400` (dias) | PipelineStale | 35 dias fixo na regra PipelineStale; sem chave em `params.yaml` | Última execução com sucesso em 21/10/2026, dentro de 35 dias; PipelineStale não disparou |
+
+Para a queda de AUC, o repositório separa três sinais que não devem ser confundidos.
+O alerta ModelPerformanceDrop é pontual: dispara quando `model_auc_drop` supera `model_auc_drop_limit` em lote com sucesso, com comparação estrita (queda exatamente igual a 0,05 não dispara).
+A detecção `performance_drop_detected`, calculada em `performance.py`, usa a mesma comparação estrita contra `performance.auc_drop` e registra o resultado no relatório do lote.
+A recomendação do gate (`gate_retrain_recommended`, em `gate.py`) é mais exigente: além da queda acima do limite, exige o IC 95% inteiro acima do limite (`model_auc_drop_ci_low` maior que o limite), quantidade e cobertura de rótulos e reamostragens suficientes; só ela sustenta o alerta RetrainRecommended.
+
+Lacunas declaradas. Os SLIs de taxa de sucesso e de rejeição existem apenas como expressões PromQL documentadas nesta seção: não há métrica publicada, regra de alerta nem janela temporal que os implemente, e `monitoring/prometheus/alert_rules.yml` não contém regra de taxa.
+PipelineStageFailed e ContractViolation disparam por lote (qualquer falha ou bloqueio notifica), e a taxa é lida no Grafana nos painéis "Estado do lote: -1 executando / 0 falha / 1 sucesso / 2 bloqueado" e "Status do estágio: 0 falha / 1 sucesso / 2 bloqueado", ou executando as expressões acima no Prometheus.
+A definição de um SLI de taxa com janela explícita sobre `pipeline_batch_status` e `batch_quarantined` consta como ação proposta, ainda não implementada, no [post-mortem](postmortem.md).
+A regra PipelineStale usa comparação estrita (`time() - max(pipeline_last_success_timestamp) > 86400 * 35`): exatamente 35 dias desde o último sucesso não dispara, enquanto o SLO escrito como "< 35 dias" já considera esse caso uma violação; a diferença é a mesma nuance descrita acima para a queda de AUC.
+A freshness trata `absent(pipeline_last_success_timestamp)` como violação: sem série (por exemplo, após reinício do Pushgateway, que no `docker-compose.yml` não tem persistência configurada), PipelineStale dispara; o alerta é inibido enquanto PipelineStageFailed estiver ativo, e o painel "Último sucesso (Unix timestamp)" mostra o valor bruto.
+O valor numérico do timestamp não está nas evidências versionadas (`reports/metrics/*.prom` não são publicados); a data vem de `execution_date` em `docs/evidencias/observability/run-summary.json`.
+Nenhuma regra nova de taxa está prometida; qualquer mudança passa por `monitoring/prometheus/alert_rules.yml` e pelo teste `monitoring/prometheus/alert_rules.test.yml`.
+
 ## Runbooks
 
 ### ContractViolation
@@ -102,5 +128,6 @@ mas precisa ser investigada. Verificar resumo de entrega, além do status da an�
 
 [Execução e serviços](observability-integration.md),
 [política do gate](experiment-analysis.md),
-[linha do tempo](incident-timeline.md) e
+[linha do tempo](incident-timeline.md),
+[post-mortem](postmortem.md) e
 [evidências](evidencias/README.md).

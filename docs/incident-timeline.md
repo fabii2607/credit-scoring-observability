@@ -92,6 +92,8 @@ Para o post-mortem, apresentar a sequência entrada → score/decisão → perfo
 retreino precisará de dados/validação próprios, análise econômica e fairness;
 o experimento não promove nenhum challenger.
 
+- [Post-mortem do incidente simulado](postmortem.md)
+
 Evidências: [HTML estável](evidencias/drift/2026-01.html),
 [HTML de entradas](evidencias/drift/2026-04.html),
 [HTML de degradação](evidencias/drift/2026-06.html),
