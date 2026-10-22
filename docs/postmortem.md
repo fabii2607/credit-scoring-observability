@@ -7,10 +7,10 @@ as evidências públicas foram commitadas em c5d4029 e o HEAD da entrega é
 8c6c880 (merge do PR #15, 21/10/2026). Modelo, metadados, dados e fontes
 efetivas são identificados por SHA-256 no
 [manifesto](evidencias/manifest.json) (`model_sha256` 86aede00…,
-`control_sha256` 9a3173db…). A tag `execucao-referencia` ainda aponta para
-dd1dc11 (14/10/2026) e não identifica esta execução. Os meses 2026-01 a
-2026-07 são cenários sintéticos com intervenções conhecidas, não datas de
-produção.
+`control_sha256` 9a3173db…). As tags `execucao-referencia` e `pacote-2`
+apontam para 0e42046 (merge do PR #17, 22/10/2026), que contém as evidências
+e esta documentação. Os meses 2026-01 a 2026-07 são cenários sintéticos com
+intervenções conhecidas, não datas de produção.
 
 Este post-mortem não atribui culpa: o incidente foi induzido de propósito para
 verificar o que o pipeline detecta, o que recomenda e o que deixa passar.
@@ -215,7 +215,6 @@ etapa, não uma pessoa.
 | Preservar `startsAt` dos alertas no checker e incluir `logs/alerts.jsonl` (sem dados de clientes) nas evidências | Etapa 3 | proposta |
 | Definir retenção para Pushgateway e MLflow e registrar na tabela de retenção de [lgpd.md](lgpd.md) | Etapa 3, com Etapa 4 | proposta |
 | Publicar `intervention/*.json` de todos os meses alterados, para que o default original de maio e julho fique nas evidências | Etapa 2 | proposta |
-| Mover a tag `execucao-referencia` para o commit das evidências de 21/10 ou documentar por que permanece em dd1dc11 | responsável pela entrega | proposta |
 
 ## Limites
 
