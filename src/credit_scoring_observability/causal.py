@@ -7,20 +7,12 @@ Hipóteses (DAG, também em docs/lgpd.md e no README):
     novos perfis de cliente ──► FICO ↓ ────────────────────────────┘
     renegociação / aperto de renda ──────────────► P(default | X) muda (concept)
 
-Atribuição por intervenção do(X) sobre o MODELO: para cada grupo de variáveis
-causalmente ligadas, a distribuição do lote é substituída pela da Referência
-(mapeamento de quantis que PRESERVA A ORDEM dentro do lote, então as correlações
-entre as colunas restauradas e o resto do perfil continuam) e mede-se quanto o
-efeito no modelo volta ao normal.
-
-    renda+dívida   annual_inc, dti   (dti = dívida / renda: restaurar só um quebra a relação)
-    rotativo       revol_util, revol_bal
-    score          fico_avg
-
-O que isto mede: a SENSIBILIDADE do modelo a cada grupo, sob as hipóteses do DAG.
-Não identifica a causa no mundo real — para isso seriam necessários dados de
-intervenção ou um desenho quase-experimental. O método vem da Aula 4 de Drift
-(restaurar uma feature isolada quebra as correlações; por isso, grupos).
+Perturbação do MODELO por restauração de marginais, em grupos relacionados:
+renda+dívida (annual_inc, dti), rotativo (revol_util, revol_bal), score (fico_avg).
+O mapeamento por quantis é monotônico por coluna. Não impõe as equações do DAG,
+não preserva necessariamente correlações lineares/distribuição conjunta e não
+equivale à identificação de do(X) no mundo real. Mede sensibilidade do modelo.
+O DAG é uma hipótese ilustrativa, não estimada com os dados.
 
 Uso (`make causal`, depois do `make simulate` da Etapa 2):
     uv run python -m credit_scoring_observability.causal [--batches 2026-04 2026-06]
@@ -38,12 +30,20 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 
 from credit_scoring_observability.config import (
+    MODEL_FILE,
+    MODEL_METADATA_FILE,
     PRODUCTION_DIR,
     REFERENCE_SAMPLE_FILE,
     REPORTS_DIR,
+    SPLIT_COLUMN,
     TARGET,
 )
+from credit_scoring_observability.drift_report import safe_batch_id, write_json
 from credit_scoring_observability.logger import get_logger, setup_logging
+from credit_scoring_observability.parameters import get_params
+from credit_scoring_observability.simulation import file_digest
+from credit_scoring_observability.stats import psi_quantile
+from credit_scoring_observability.validate import validate_batch
 
 logger = get_logger(__name__)
 
@@ -53,7 +53,6 @@ CAUSAL_GROUPS: dict[str, list[str]] = {
     "score": ["fico_avg"],
 }
 CAUSAL_REPORT = REPORTS_DIR / "causal" / "causal_analysis.json"
-EPSILON = 1e-6
 PSI_ALERT = 0.10
 AUC_DROP_ALERT = 0.05
 
@@ -61,7 +60,7 @@ AUC_DROP_ALERT = 0.05
 def restore_group(
     batch: pd.DataFrame, reference: pd.DataFrame, columns: list[str]
 ) -> pd.DataFrame:
-    """do(grupo = distribuição da Referência), preservando a ordem dentro do lote.
+    """Restaura marginais por quantis sem alegar intervenção causal identificada.
 
     Cada valor do lote vira o quantil da Referência na mesma posição relativa
     (rank) que ele ocupa no lote. Nulos continuam nulos (o pipeline imputa).
@@ -71,7 +70,9 @@ def restore_group(
         values = out[col]
         present = values.notna()
         ref_values = np.sort(reference[col].dropna().to_numpy(dtype=float))
-        ranks = values[present].rank(method="first", pct=True).to_numpy()
+        if not len(ref_values):
+            raise ValueError(f"Referência sem valores observados para {col}")
+        ranks = values[present].rank(method="average", pct=True).to_numpy()
         idx = np.clip(np.ceil(ranks * len(ref_values)).astype(int) - 1, 0, None)
         restored = values.astype(float).copy()
         restored[present] = ref_values[idx]
@@ -80,22 +81,11 @@ def restore_group(
 
 
 def score_psi(reference: np.ndarray, current: np.ndarray, bins: int = 10) -> float:
-    """PSI do score com bins pelos quantis da Referência.
-
-    Cópia mínima para a análise causal; a Etapa 2 tem o PSI oficial das features.
-    """
-    ref = np.asarray(reference, dtype=float)
-    cur = np.asarray(current, dtype=float)
-    inner = np.unique(np.quantile(ref, np.linspace(0, 1, bins + 1)))[1:-1]
-    ref_pct = np.bincount(
-        np.searchsorted(inner, ref, side="right"), minlength=len(inner) + 1
-    )
-    cur_pct = np.bincount(
-        np.searchsorted(inner, cur, side="right"), minlength=len(inner) + 1
-    )
-    ref_pct = np.clip(ref_pct / ref_pct.sum(), EPSILON, None)
-    cur_pct = np.clip(cur_pct / cur_pct.sum(), EPSILON, None)
-    return float(np.sum((cur_pct - ref_pct) * np.log(cur_pct / ref_pct)))
+    """Mesmo PSI por quantis do monitoramento, sem implementação paralela."""
+    value = psi_quantile(reference, current, bins=bins)
+    if value is None:
+        raise ValueError("PSI do score indisponível")
+    return value
 
 
 def model_effects(model, frame: pd.DataFrame, reference_score: np.ndarray) -> dict:
@@ -107,8 +97,12 @@ def model_effects(model, frame: pd.DataFrame, reference_score: np.ndarray) -> di
         "mean_score": float(score.mean()),
         "roc_auc": None,
     }
-    if TARGET in frame and frame[TARGET].nunique() == 2:
-        effects["roc_auc"] = float(roc_auc_score(frame[TARGET], score))
+    if TARGET in frame:
+        known = frame[TARGET].notna().to_numpy()
+        if frame.loc[known, TARGET].nunique() == 2:
+            effects["roc_auc"] = float(
+                roc_auc_score(frame.loc[known, TARGET], score[known])
+            )
     return effects
 
 
@@ -126,29 +120,36 @@ def _round(value: float | None) -> float | None:
     return None if value is None else round(value, 4)
 
 
-def diagnose(drifted: dict, reference: dict, all_restored: dict) -> str:
-    """Covariate shift × concept drift a partir dos efeitos e da recuperação."""
-    auc_drop = (
-        reference["roc_auc"] - drifted["roc_auc"]
-        if drifted["roc_auc"] is not None and reference["roc_auc"] is not None
-        else 0.0
-    )
-    if drifted["score_psi"] > PSI_ALERT and auc_drop <= AUC_DROP_ALERT:
+def diagnose(
+    drifted: dict,
+    reference: dict,
+    all_restored: dict,
+    auc_drop_limit: float = AUC_DROP_ALERT,
+    psi_limit: float = PSI_ALERT,
+) -> str:
+    """Hipóteses de sensibilidade, sem substituir a decisão do gate."""
+    if drifted["roc_auc"] is None or reference["roc_auc"] is None:
+        return "performance indisponível: não concluir ausência de concept drift"
+    auc_drop = reference["roc_auc"] - drifted["roc_auc"]
+    score_recovered = (all_restored["recovery_score_psi"] or 0) >= 0.5
+    if (
+        drifted["score_psi"] > psi_limit
+        and auc_drop <= auc_drop_limit
+        and score_recovered
+    ):
         return (
-            "covariate shift: o score mudou e restaurar X o devolve à Referência; "
-            "a AUC se mantém -> monitorar/recalibrar, sem retreino"
+            "covariate shift compatível: score deslocado e parcialmente recuperado "
+            "pela restauração de marginais; investigar entradas e calibração"
         )
-    if auc_drop > AUC_DROP_ALERT and (all_restored["recovery_roc_auc"] or 0) < 0.5:
+    if auc_drop > auc_drop_limit and (all_restored["recovery_roc_auc"] or 0) < 0.5:
         return (
-            "concept drift: X está estável (restaurar X não recupera a AUC) e a "
-            "performance caiu -> P(Y|X) mudou, retreinar com dados recentes"
+            "concept drift suspeito: queda de AUC sem recuperação suficiente pela "
+            "restauração dos grupos; verificar X e rótulos e consultar o gate; "
+            "não prova mudança de P(Y|X) ou causa econômica"
         )
-    if drifted["score_psi"] > PSI_ALERT / 2 or auc_drop > AUC_DROP_ALERT / 2:
-        return (
-            "drift misto abaixo dos limiares: X e P(Y|X) podem ter mudado juntos; "
-            "investigar o lote"
-        )
-    return "sem drift relevante atribuível aos grupos analisados"
+    if drifted["score_psi"] > psi_limit / 2 or auc_drop > auc_drop_limit / 2:
+        return "sinais para investigação: restauração de marginais não identifica o mecanismo do drift"
+    return "sem sinais relevantes pelos critérios de sensibilidade avaliados"
 
 
 def analyze_batch(
@@ -158,6 +159,8 @@ def analyze_batch(
     batch_id: str,
     groups: dict[str, list[str]] = CAUSAL_GROUPS,
     reference_roc_auc: float | None = None,
+    auc_drop_limit: float = AUC_DROP_ALERT,
+    psi_limit: float = PSI_ALERT,
 ) -> dict:
     """Intervenções em todas as combinações de grupos para um lote.
 
@@ -171,8 +174,9 @@ def analyze_batch(
         reference_roc_auc = (
             getattr(model, "metadata", {}).get("metrics_on_test", {}).get("roc_auc")
         )
-    if reference_roc_auc is not None:
-        ref_effects["roc_auc"] = float(reference_roc_auc)
+    ref_effects["roc_auc"] = (
+        float(reference_roc_auc) if reference_roc_auc is not None else None
+    )
     drifted = model_effects(model, batch, reference_score)
 
     names = list(groups)
@@ -212,7 +216,9 @@ def analyze_batch(
         "interaction_score_psi": _round(
             (all_restored["recovery_score_psi"] or 0.0) - sum(singles)
         ),
-        "diagnosis": diagnose(drifted, ref_effects, all_restored),
+        "diagnosis": diagnose(
+            drifted, ref_effects, all_restored, auc_drop_limit, psi_limit
+        ),
     }
 
 
@@ -233,34 +239,74 @@ def run(batch_ids: list[str] | None = None, output: Path = CAUSAL_REPORT) -> dic
         raise SystemExit(
             "Nenhum lote em data/production/. Rode `make simulate` (Etapa 2) antes."
         )
+    if len(set(batch_ids)) != len(batch_ids):
+        raise ValueError("Seleção duplicada")
     model = load_model()
-    reference = pd.read_parquet(REFERENCE_SAMPLE_FILE)
+    params = get_params()
+    manifest_path = PRODUCTION_DIR / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    reference = pd.read_parquet(REFERENCE_SAMPLE_FILE).drop(
+        columns=SPLIT_COLUMN, errors="ignore"
+    )
+    control_path = PRODUCTION_DIR / "reserves/control.parquet"
+    if (
+        file_digest(control_path)
+        != manifest["artifacts"]["reserves/control.parquet"]["sha256"]
+    ):
+        raise ValueError("Controle difere do manifesto")
+    control = pd.read_parquet(control_path)
+    for name, frame in [("reference_sample", reference), ("control", control)]:
+        if not validate_batch(frame, name).passed:
+            raise ValueError("Referência/controle inválido")
+    control_auc = model_effects(model, control, model.predict_proba(reference))[
+        "roc_auc"
+    ]
+    batches = []
+    for batch_id in batch_ids:
+        safe_batch_id(batch_id)
+        path = PRODUCTION_DIR / f"{batch_id}.parquet"
+        if batch_id == "corrupted" or path.name not in manifest["artifacts"]:
+            raise ValueError("Lote não é um mês regular do manifesto")
+        if file_digest(path) != manifest["artifacts"][path.name]["sha256"]:
+            raise ValueError("Lote difere do manifesto")
+        frame = pd.read_parquet(path)
+        if not validate_batch(frame, batch_id).passed:
+            raise ValueError("Lote inválido; análise de sensibilidade não executada")
+        result = analyze_batch(
+            frame,
+            reference,
+            model,
+            batch_id,
+            reference_roc_auc=control_auc,
+            auc_drop_limit=params.performance.auc_drop,
+            psi_limit=params.drift.psi_warning,
+        )
+        result["batch_sha256"] = file_digest(path)
+        batches.append(result)
     report = {
         "model_version": model.version,
+        "model_sha256": file_digest(MODEL_FILE),
+        "metadata_sha256": file_digest(MODEL_METADATA_FILE),
+        "threshold": model.threshold,
         "groups": CAUSAL_GROUPS,
+        "baseline_source": "reserves/control.parquet (fora do treino)",
+        "control_sha256": file_digest(control_path),
+        "reference_sha256": file_digest(REFERENCE_SAMPLE_FILE),
+        "simulation_manifest_sha256": file_digest(manifest_path),
+        "implementation_sha256": file_digest(Path(__file__)),
+        "auc_drop_limit": params.performance.auc_drop,
+        "score_psi_limit": params.drift.psi_warning,
         "method_limit": (
-            "Mede a sensibilidade do modelo a cada grupo sob as hipóteses do DAG; "
-            "não prova a causa no mundo real."
+            "Sensibilidade do modelo à restauração de marginais. Não identifica "
+            "causa econômica, não preserva necessariamente relações estruturais "
+            "ou correlações lineares e não substitui a recomendação do gate."
         ),
-        "batches": [
-            analyze_batch(
-                pd.read_parquet(PRODUCTION_DIR / f"{batch_id}.parquet"),
-                reference,
-                model,
-                batch_id,
-            )
-            for batch_id in batch_ids
-        ],
+        "batches": batches,
     }
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(
-        json.dumps(report, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-        newline="\n",
-    )
+    write_json(output, report)
     for batch in report["batches"]:
         logger.info(
-            "atribuição causal",
+            "análise de sensibilidade",
             batch_id=batch["batch_id"],
             diagnostico=batch["diagnosis"],
         )

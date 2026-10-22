@@ -1,0 +1,617 @@
+{
+  "model_version": "V2_optimized",
+  "model_sha256": "86aede0009614a35796822fe01764b5e5646074c482e5398e86be0174f6d3442",
+  "metadata_sha256": "eb05a610a5875ca8a35afe984c42ae3c64b142f849fd77b7cedbd4c689326043",
+  "threshold": 0.2,
+  "groups": {
+    "renda+dívida": [
+      "annual_inc",
+      "dti"
+    ],
+    "rotativo": [
+      "revol_util",
+      "revol_bal"
+    ],
+    "score": [
+      "fico_avg"
+    ]
+  },
+  "baseline_source": "reserves/control.parquet (fora do treino)",
+  "control_sha256": "9a3173db3d70d548aaab44940e4fd6098d0c2e6aa4e89e7db611f85f6008d4e2",
+  "reference_sha256": "f23e376f742d846c24f2307fee08dc877f7f53b423a2d6b4b90b4b0ec7309bc1",
+  "simulation_manifest_sha256": "1c318226cf6793221bb6c3fc9bcdb77f6b211a4630d247ffcec8a5546d94636f",
+  "implementation_sha256": "250e909d604dda3bc6e2a20a49e39d3af03627a3537580061a5d89414ad099d4",
+  "auc_drop_limit": 0.05,
+  "score_psi_limit": 0.1,
+  "method_limit": "Sensibilidade do modelo à restauração de marginais. Não identifica causa econômica, não preserva necessariamente relações estruturais ou correlações lineares e não substitui a recomendação do gate.",
+  "batches": [
+    {
+      "batch_id": "2026-01",
+      "rows": 10000,
+      "reference": {
+        "score_psi": 0.0,
+        "approval_rate": 0.5883,
+        "mean_score": 0.1998,
+        "roc_auc": 0.6974
+      },
+      "drifted": {
+        "score_psi": 0.0015,
+        "approval_rate": 0.5936,
+        "mean_score": 0.1987,
+        "roc_auc": 0.7051
+      },
+      "interventions": {
+        "renda+dívida": {
+          "score_psi": 0.0017,
+          "approval_rate": 0.5951,
+          "mean_score": 0.1982,
+          "roc_auc": 0.7051,
+          "recovery_score_psi": -0.1129,
+          "recovery_approval_rate": -0.2828,
+          "recovery_roc_auc": -0.0022
+        },
+        "rotativo": {
+          "score_psi": 0.0014,
+          "approval_rate": 0.5936,
+          "mean_score": 0.1986,
+          "roc_auc": 0.705,
+          "recovery_score_psi": 0.0665,
+          "recovery_approval_rate": 0.0,
+          "recovery_roc_auc": 0.0025
+        },
+        "score": {
+          "score_psi": 0.0015,
+          "approval_rate": 0.5936,
+          "mean_score": 0.1987,
+          "roc_auc": 0.7051,
+          "recovery_score_psi": 0.0098,
+          "recovery_approval_rate": 0.0,
+          "recovery_roc_auc": 0.0014
+        },
+        "renda+dívida + rotativo": {
+          "score_psi": 0.0017,
+          "approval_rate": 0.5954,
+          "mean_score": 0.1981,
+          "roc_auc": 0.7051,
+          "recovery_score_psi": -0.1041,
+          "recovery_approval_rate": -0.3394,
+          "recovery_roc_auc": 0.0003
+        },
+        "renda+dívida + score": {
+          "score_psi": 0.0017,
+          "approval_rate": 0.5951,
+          "mean_score": 0.1982,
+          "roc_auc": 0.7051,
+          "recovery_score_psi": -0.1049,
+          "recovery_approval_rate": -0.2828,
+          "recovery_roc_auc": -0.0008
+        },
+        "rotativo + score": {
+          "score_psi": 0.0014,
+          "approval_rate": 0.5936,
+          "mean_score": 0.1987,
+          "roc_auc": 0.705,
+          "recovery_score_psi": 0.0758,
+          "recovery_approval_rate": 0.0,
+          "recovery_roc_auc": 0.0039
+        },
+        "renda+dívida + rotativo + score": {
+          "score_psi": 0.0017,
+          "approval_rate": 0.5954,
+          "mean_score": 0.1981,
+          "roc_auc": 0.705,
+          "recovery_score_psi": -0.0965,
+          "recovery_approval_rate": -0.3394,
+          "recovery_roc_auc": 0.0017
+        }
+      },
+      "interaction_score_psi": -0.0599,
+      "diagnosis": "sem sinais relevantes pelos critérios de sensibilidade avaliados",
+      "batch_sha256": "74e29c2738d06c11d8c1eca7f0e11d3a8dfe08ed6851311cc7b06f919b8f53e4"
+    },
+    {
+      "batch_id": "2026-02",
+      "rows": 10000,
+      "reference": {
+        "score_psi": 0.0,
+        "approval_rate": 0.5883,
+        "mean_score": 0.1998,
+        "roc_auc": 0.6974
+      },
+      "drifted": {
+        "score_psi": 0.0017,
+        "approval_rate": 0.5951,
+        "mean_score": 0.1983,
+        "roc_auc": 0.7035
+      },
+      "interventions": {
+        "renda+dívida": {
+          "score_psi": 0.0015,
+          "approval_rate": 0.5939,
+          "mean_score": 0.1987,
+          "roc_auc": 0.7036,
+          "recovery_score_psi": 0.1123,
+          "recovery_approval_rate": 0.1764,
+          "recovery_roc_auc": -0.0244
+        },
+        "rotativo": {
+          "score_psi": 0.0017,
+          "approval_rate": 0.595,
+          "mean_score": 0.1983,
+          "roc_auc": 0.7035,
+          "recovery_score_psi": -0.0217,
+          "recovery_approval_rate": 0.0147,
+          "recovery_roc_auc": 0.0001
+        },
+        "score": {
+          "score_psi": 0.0017,
+          "approval_rate": 0.595,
+          "mean_score": 0.1983,
+          "roc_auc": 0.7035,
+          "recovery_score_psi": 0.0,
+          "recovery_approval_rate": 0.0147,
+          "recovery_roc_auc": 0.0007
+        },
+        "renda+dívida + rotativo": {
+          "score_psi": 0.0016,
+          "approval_rate": 0.594,
+          "mean_score": 0.1987,
+          "roc_auc": 0.7036,
+          "recovery_score_psi": 0.0281,
+          "recovery_approval_rate": 0.1617,
+          "recovery_roc_auc": -0.0241
+        },
+        "renda+dívida + score": {
+          "score_psi": 0.0015,
+          "approval_rate": 0.5938,
+          "mean_score": 0.1987,
+          "roc_auc": 0.7036,
+          "recovery_score_psi": 0.123,
+          "recovery_approval_rate": 0.1911,
+          "recovery_roc_auc": -0.0238
+        },
+        "rotativo + score": {
+          "score_psi": 0.0017,
+          "approval_rate": 0.5949,
+          "mean_score": 0.1983,
+          "roc_auc": 0.7035,
+          "recovery_score_psi": -0.0217,
+          "recovery_approval_rate": 0.0294,
+          "recovery_roc_auc": 0.0007
+        },
+        "renda+dívida + rotativo + score": {
+          "score_psi": 0.0016,
+          "approval_rate": 0.5939,
+          "mean_score": 0.1987,
+          "roc_auc": 0.7036,
+          "recovery_score_psi": 0.0281,
+          "recovery_approval_rate": 0.1764,
+          "recovery_roc_auc": -0.0235
+        }
+      },
+      "interaction_score_psi": -0.0625,
+      "diagnosis": "sem sinais relevantes pelos critérios de sensibilidade avaliados",
+      "batch_sha256": "96e505e7b4221ad1bc9b8db285ee0d297f0030a71a58a884099d15700f859922"
+    },
+    {
+      "batch_id": "2026-03",
+      "rows": 10000,
+      "reference": {
+        "score_psi": 0.0,
+        "approval_rate": 0.5883,
+        "mean_score": 0.1998,
+        "roc_auc": 0.6974
+      },
+      "drifted": {
+        "score_psi": 0.3014,
+        "approval_rate": 0.3544,
+        "mean_score": 0.2706,
+        "roc_auc": 0.6963
+      },
+      "interventions": {
+        "renda+dívida": {
+          "score_psi": 0.091,
+          "approval_rate": 0.458,
+          "mean_score": 0.2357,
+          "roc_auc": 0.6948,
+          "recovery_score_psi": 0.6982,
+          "recovery_approval_rate": 0.4429,
+          "recovery_roc_auc": -1.2818
+        },
+        "rotativo": {
+          "score_psi": 0.2886,
+          "approval_rate": 0.359,
+          "mean_score": 0.269,
+          "roc_auc": 0.6962,
+          "recovery_score_psi": 0.0425,
+          "recovery_approval_rate": 0.0197,
+          "recovery_roc_auc": -0.0422
+        },
+        "score": {
+          "score_psi": 0.0706,
+          "approval_rate": 0.4762,
+          "mean_score": 0.2329,
+          "roc_auc": 0.6963,
+          "recovery_score_psi": 0.7657,
+          "recovery_approval_rate": 0.5207,
+          "recovery_roc_auc": 0.0306
+        },
+        "renda+dívida + rotativo": {
+          "score_psi": 0.0843,
+          "approval_rate": 0.4638,
+          "mean_score": 0.2341,
+          "roc_auc": 0.6948,
+          "recovery_score_psi": 0.7202,
+          "recovery_approval_rate": 0.4677,
+          "recovery_roc_auc": -1.3175
+        },
+        "renda+dívida + score": {
+          "score_psi": 0.0007,
+          "approval_rate": 0.5849,
+          "mean_score": 0.2011,
+          "roc_auc": 0.6949,
+          "recovery_score_psi": 0.9978,
+          "recovery_approval_rate": 0.9855,
+          "recovery_roc_auc": -1.2509
+        },
+        "rotativo + score": {
+          "score_psi": 0.0641,
+          "approval_rate": 0.4817,
+          "mean_score": 0.2314,
+          "roc_auc": 0.6963,
+          "recovery_score_psi": 0.7875,
+          "recovery_approval_rate": 0.5443,
+          "recovery_roc_auc": -0.0117
+        },
+        "renda+dívida + rotativo + score": {
+          "score_psi": 0.0008,
+          "approval_rate": 0.5887,
+          "mean_score": 0.1997,
+          "roc_auc": 0.6948,
+          "recovery_score_psi": 0.9973,
+          "recovery_approval_rate": 1.0017,
+          "recovery_roc_auc": -1.2864
+        }
+      },
+      "interaction_score_psi": -0.5091,
+      "diagnosis": "covariate shift compatível: score deslocado e parcialmente recuperado pela restauração de marginais; investigar entradas e calibração",
+      "batch_sha256": "f8d4b8820d887412278392fb7de7597630091d8787e1a0c89c1ddc0365007dc7"
+    },
+    {
+      "batch_id": "2026-04",
+      "rows": 10000,
+      "reference": {
+        "score_psi": 0.0,
+        "approval_rate": 0.5883,
+        "mean_score": 0.1998,
+        "roc_auc": 0.6974
+      },
+      "drifted": {
+        "score_psi": 0.7248,
+        "approval_rate": 0.2448,
+        "mean_score": 0.3165,
+        "roc_auc": 0.6995
+      },
+      "interventions": {
+        "renda+dívida": {
+          "score_psi": 0.2157,
+          "approval_rate": 0.3871,
+          "mean_score": 0.2551,
+          "roc_auc": 0.6969,
+          "recovery_score_psi": 0.7024,
+          "recovery_approval_rate": 0.4143,
+          "recovery_roc_auc": 1.2174
+        },
+        "rotativo": {
+          "score_psi": 0.6943,
+          "approval_rate": 0.252,
+          "mean_score": 0.3133,
+          "roc_auc": 0.6996,
+          "recovery_score_psi": 0.0422,
+          "recovery_approval_rate": 0.021,
+          "recovery_roc_auc": -0.0376
+        },
+        "score": {
+          "score_psi": 0.1925,
+          "approval_rate": 0.4041,
+          "mean_score": 0.2557,
+          "roc_auc": 0.6995,
+          "recovery_score_psi": 0.7344,
+          "recovery_approval_rate": 0.4638,
+          "recovery_roc_auc": -0.0101
+        },
+        "renda+dívida + rotativo": {
+          "score_psi": 0.1968,
+          "approval_rate": 0.3956,
+          "mean_score": 0.2523,
+          "roc_auc": 0.697,
+          "recovery_score_psi": 0.7285,
+          "recovery_approval_rate": 0.439,
+          "recovery_roc_auc": 1.1939
+        },
+        "renda+dívida + score": {
+          "score_psi": 0.0012,
+          "approval_rate": 0.5815,
+          "mean_score": 0.2016,
+          "roc_auc": 0.697,
+          "recovery_score_psi": 0.9984,
+          "recovery_approval_rate": 0.9802,
+          "recovery_roc_auc": 1.2081
+        },
+        "rotativo + score": {
+          "score_psi": 0.1751,
+          "approval_rate": 0.4123,
+          "mean_score": 0.2529,
+          "roc_auc": 0.6996,
+          "recovery_score_psi": 0.7584,
+          "recovery_approval_rate": 0.4876,
+          "recovery_roc_auc": -0.0476
+        },
+        "renda+dívida + rotativo + score": {
+          "score_psi": 0.0009,
+          "approval_rate": 0.5925,
+          "mean_score": 0.1992,
+          "roc_auc": 0.697,
+          "recovery_score_psi": 0.9987,
+          "recovery_approval_rate": 1.0122,
+          "recovery_roc_auc": 1.1853
+        }
+      },
+      "interaction_score_psi": -0.4803,
+      "diagnosis": "covariate shift compatível: score deslocado e parcialmente recuperado pela restauração de marginais; investigar entradas e calibração",
+      "batch_sha256": "04fdc8fa11cbac7471c93f87c9708a105fd12db5c2b59521dcb5759098f3789e"
+    },
+    {
+      "batch_id": "2026-05",
+      "rows": 10000,
+      "reference": {
+        "score_psi": 0.0,
+        "approval_rate": 0.5883,
+        "mean_score": 0.1998,
+        "roc_auc": 0.6974
+      },
+      "drifted": {
+        "score_psi": 0.0011,
+        "approval_rate": 0.5926,
+        "mean_score": 0.1992,
+        "roc_auc": 0.6181
+      },
+      "interventions": {
+        "renda+dívida": {
+          "score_psi": 0.001,
+          "approval_rate": 0.5925,
+          "mean_score": 0.1991,
+          "roc_auc": 0.6182,
+          "recovery_score_psi": 0.0741,
+          "recovery_approval_rate": 0.0232,
+          "recovery_roc_auc": 0.0014
+        },
+        "rotativo": {
+          "score_psi": 0.001,
+          "approval_rate": 0.5925,
+          "mean_score": 0.1991,
+          "roc_auc": 0.6182,
+          "recovery_score_psi": 0.0841,
+          "recovery_approval_rate": 0.0232,
+          "recovery_roc_auc": 0.0016
+        },
+        "score": {
+          "score_psi": 0.0011,
+          "approval_rate": 0.5926,
+          "mean_score": 0.1992,
+          "roc_auc": 0.6181,
+          "recovery_score_psi": -0.0101,
+          "recovery_approval_rate": 0.0,
+          "recovery_roc_auc": 0.0002
+        },
+        "renda+dívida + rotativo": {
+          "score_psi": 0.001,
+          "approval_rate": 0.5928,
+          "mean_score": 0.199,
+          "roc_auc": 0.6183,
+          "recovery_score_psi": 0.1161,
+          "recovery_approval_rate": -0.0465,
+          "recovery_roc_auc": 0.0029
+        },
+        "renda+dívida + score": {
+          "score_psi": 0.001,
+          "approval_rate": 0.5925,
+          "mean_score": 0.1991,
+          "roc_auc": 0.6182,
+          "recovery_score_psi": 0.0628,
+          "recovery_approval_rate": 0.0232,
+          "recovery_roc_auc": 0.0016
+        },
+        "rotativo + score": {
+          "score_psi": 0.001,
+          "approval_rate": 0.5925,
+          "mean_score": 0.1991,
+          "roc_auc": 0.6183,
+          "recovery_score_psi": 0.0729,
+          "recovery_approval_rate": 0.0232,
+          "recovery_roc_auc": 0.0018
+        },
+        "renda+dívida + rotativo + score": {
+          "score_psi": 0.001,
+          "approval_rate": 0.5928,
+          "mean_score": 0.199,
+          "roc_auc": 0.6184,
+          "recovery_score_psi": 0.1048,
+          "recovery_approval_rate": -0.0465,
+          "recovery_roc_auc": 0.0032
+        }
+      },
+      "interaction_score_psi": -0.0433,
+      "diagnosis": "concept drift suspeito: queda de AUC sem recuperação suficiente pela restauração dos grupos; verificar X e rótulos e consultar o gate; não prova mudança de P(Y|X) ou causa econômica",
+      "batch_sha256": "998abb8184a12cb027b77a313012d2ab4a7eaad2e3372ffcd0c49a16d336b929"
+    },
+    {
+      "batch_id": "2026-06",
+      "rows": 10000,
+      "reference": {
+        "score_psi": 0.0,
+        "approval_rate": 0.5883,
+        "mean_score": 0.1998,
+        "roc_auc": 0.6974
+      },
+      "drifted": {
+        "score_psi": 0.001,
+        "approval_rate": 0.5924,
+        "mean_score": 0.1991,
+        "roc_auc": 0.5993
+      },
+      "interventions": {
+        "renda+dívida": {
+          "score_psi": 0.0011,
+          "approval_rate": 0.5926,
+          "mean_score": 0.1989,
+          "roc_auc": 0.5994,
+          "recovery_score_psi": -0.0737,
+          "recovery_approval_rate": -0.0487,
+          "recovery_roc_auc": 0.0003
+        },
+        "rotativo": {
+          "score_psi": 0.001,
+          "approval_rate": 0.592,
+          "mean_score": 0.1992,
+          "roc_auc": 0.5993,
+          "recovery_score_psi": 0.0657,
+          "recovery_approval_rate": 0.0975,
+          "recovery_roc_auc": -0.0001
+        },
+        "score": {
+          "score_psi": 0.001,
+          "approval_rate": 0.5927,
+          "mean_score": 0.199,
+          "roc_auc": 0.5993,
+          "recovery_score_psi": 0.0689,
+          "recovery_approval_rate": -0.0731,
+          "recovery_roc_auc": -0.0004
+        },
+        "renda+dívida + rotativo": {
+          "score_psi": 0.0011,
+          "approval_rate": 0.5924,
+          "mean_score": 0.199,
+          "roc_auc": 0.5994,
+          "recovery_score_psi": -0.1051,
+          "recovery_approval_rate": 0.0,
+          "recovery_roc_auc": 0.0003
+        },
+        "renda+dívida + score": {
+          "score_psi": 0.0011,
+          "approval_rate": 0.5929,
+          "mean_score": 0.1988,
+          "roc_auc": 0.5993,
+          "recovery_score_psi": -0.0276,
+          "recovery_approval_rate": -0.1218,
+          "recovery_roc_auc": -0.0001
+        },
+        "rotativo + score": {
+          "score_psi": 0.0009,
+          "approval_rate": 0.5923,
+          "mean_score": 0.1991,
+          "roc_auc": 0.5993,
+          "recovery_score_psi": 0.1249,
+          "recovery_approval_rate": 0.0244,
+          "recovery_roc_auc": -0.0005
+        },
+        "renda+dívida + rotativo + score": {
+          "score_psi": 0.0011,
+          "approval_rate": 0.5927,
+          "mean_score": 0.1989,
+          "roc_auc": 0.5993,
+          "recovery_score_psi": -0.0498,
+          "recovery_approval_rate": -0.0731,
+          "recovery_roc_auc": -0.0001
+        }
+      },
+      "interaction_score_psi": -0.1107,
+      "diagnosis": "concept drift suspeito: queda de AUC sem recuperação suficiente pela restauração dos grupos; verificar X e rótulos e consultar o gate; não prova mudança de P(Y|X) ou causa econômica",
+      "batch_sha256": "cd1e19a2c50ae7812f7df4e16b1b6fdd11c03dda1f0bc0c954c0b630f6dffc0a"
+    },
+    {
+      "batch_id": "2026-07",
+      "rows": 10000,
+      "reference": {
+        "score_psi": 0.0,
+        "approval_rate": 0.5883,
+        "mean_score": 0.1998,
+        "roc_auc": 0.6974
+      },
+      "drifted": {
+        "score_psi": 0.0024,
+        "approval_rate": 0.5826,
+        "mean_score": 0.2014,
+        "roc_auc": 0.5589
+      },
+      "interventions": {
+        "renda+dívida": {
+          "score_psi": 0.0022,
+          "approval_rate": 0.5832,
+          "mean_score": 0.2013,
+          "roc_auc": 0.559,
+          "recovery_score_psi": 0.0834,
+          "recovery_approval_rate": 0.1053,
+          "recovery_roc_auc": 0.0005
+        },
+        "rotativo": {
+          "score_psi": 0.0023,
+          "approval_rate": 0.5829,
+          "mean_score": 0.2014,
+          "roc_auc": 0.5588,
+          "recovery_score_psi": 0.0385,
+          "recovery_approval_rate": 0.0527,
+          "recovery_roc_auc": -0.0006
+        },
+        "score": {
+          "score_psi": 0.0024,
+          "approval_rate": 0.5826,
+          "mean_score": 0.2014,
+          "roc_auc": 0.5589,
+          "recovery_score_psi": 0.0014,
+          "recovery_approval_rate": -0.0,
+          "recovery_roc_auc": -0.0003
+        },
+        "renda+dívida + rotativo": {
+          "score_psi": 0.0023,
+          "approval_rate": 0.5831,
+          "mean_score": 0.2013,
+          "roc_auc": 0.5589,
+          "recovery_score_psi": 0.0512,
+          "recovery_approval_rate": 0.0878,
+          "recovery_roc_auc": -0.0001
+        },
+        "renda+dívida + score": {
+          "score_psi": 0.0022,
+          "approval_rate": 0.5832,
+          "mean_score": 0.2013,
+          "roc_auc": 0.5589,
+          "recovery_score_psi": 0.0845,
+          "recovery_approval_rate": 0.1053,
+          "recovery_roc_auc": 0.0002
+        },
+        "rotativo + score": {
+          "score_psi": 0.0023,
+          "approval_rate": 0.5829,
+          "mean_score": 0.2014,
+          "roc_auc": 0.5588,
+          "recovery_score_psi": 0.0396,
+          "recovery_approval_rate": 0.0527,
+          "recovery_roc_auc": -0.0009
+        },
+        "renda+dívida + rotativo + score": {
+          "score_psi": 0.0023,
+          "approval_rate": 0.5831,
+          "mean_score": 0.2013,
+          "roc_auc": 0.5589,
+          "recovery_score_psi": 0.0529,
+          "recovery_approval_rate": 0.0878,
+          "recovery_roc_auc": -0.0004
+        }
+      },
+      "interaction_score_psi": -0.0704,
+      "diagnosis": "concept drift suspeito: queda de AUC sem recuperação suficiente pela restauração dos grupos; verificar X e rótulos e consultar o gate; não prova mudança de P(Y|X) ou causa econômica",
+      "batch_sha256": "dbf069eb173444834e20079b7718c2794a81b80ea71a45185a7e6e61c189dee2"
+    }
+  ]
+}

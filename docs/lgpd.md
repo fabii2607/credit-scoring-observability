@@ -137,7 +137,7 @@ O atributo auditado é a **região** do cliente (Census dos EUA: Northeast, Midw
 
 ### Em produção (Etapa 2)
 
-A razão por região é medida em cada lote (`approval_disparity`, sem precisar de rótulo) e entra como **guardrail** do retreino: um challenger não é promovido se piorar a razão em mais de 0,05. *Tabela por lote a preencher com a execução de referência.*
+O módulo `approval_disparity` permite medir a razão por região sem rótulos; essa medição não está integrada automaticamente à CLI mensal é uma política proposta para eventual **guardrail** de retreino: um challenger não deveria ser promovido se piorar a razão em mais de 0,05. Não há promoção automática implementada.
 
 ### Mitigação avaliada e não adotada (`mitigation.py`)
 
@@ -153,7 +153,7 @@ Thresholds por região com **paridade de FPR**, determinísticos: a meta é o FP
 2. Usar a região explicitamente na decisão é **tratamento diferenciado por um proxy de raça**, mais difícil de justificar (Art. 6º, IX) do que um modelo que não a usa. A adoção dependeria de avaliação jurídica.
 3. O `ThresholdOptimizer` do fairlearn foi descartado: ele sorteia a decisão dentro do grupo, o que é indefensável diante do pedido de revisão do Art. 20.
 
-O que se adota é a **fairness through unawareness** no modelo (a região não é feature), a vigilância por lote, o guardrail no retreino e a revisão humana perto do threshold.
+O que se adota é a **fairness through unawareness** no modelo (a região não é feature), a proposta de vigilância por lote, um guardrail para eventual retreino e revisão humana perto do threshold. Isso não constitui uma esteira de retreinamento implementada.
 
 ## 9. Relatório de Impacto (resumo de RIPD, Art. 38)
 
@@ -190,20 +190,21 @@ flowchart LR
 
 As setas cheias mudam **quem** chega (covariate shift). A tracejada muda **o que acontece** com o mesmo perfil (concept drift). As hipóteses são do grupo; o DAG não foi aprendido dos dados.
 
-### Atribuição por intervenção (`causal.py`, `make causal`)
+### Sensibilidade por restauração de marginais
 
-Para cada grupo de variáveis causalmente ligadas — **renda + dti** (o dti é a dívida dividida pela renda), **rotativo** (`revol_util`, `revol_bal`) e **score (FICO)** —, a distribuição do lote é substituída pela da Referência. O mapeamento é por quantis e **preserva a ordem** dentro do lote, para não quebrar as correlações do grupo (Aula 4 de Drift). Em seguida, mede-se quanto o efeito no modelo (PSI do score, aprovação, AUC) volta ao normal, em todas as combinações de grupos, com o modelo que estava em produção durante o drift.
+O comando `make causal` avalia grupos relacionados: renda/DTI, rotativo e FICO.
+DTI representa comprometimento de renda com dívidas; não é reconstruído pela
+razão entre um saldo de dívida e a renda anual disponível nas features.
 
-Diagnóstico automático:
-- **Covariate shift:** PSI do score > 0,10, AUC estável, e restaurar X devolve o score.
-- **Concept drift:** AUC cai > 0,05, e restaurar X **não** recupera a AUC, porque P(Y|X) mudou.
+O mapeamento por quantis é monotônico em cada coluna. Agrupar colunas não
+garante preservar correlações lineares, distribuição conjunta ou equações
+econômicas. O DAG acima é uma hipótese ilustrativa e não é identificado por
+esse procedimento. Os diagnósticos são compatibilidade/suspeita, sem provar
+causa econômica ou autorizar retreinamento.
 
-*Tabelas por lote (M4, M6) a preencher com `make causal` sobre os lotes da Etapa 2 na execução de referência.* O método já foi validado com o modelo V2 real em lotes de teste montados a partir do pool:
-- **lote estável:** "sem drift";
-- **lote com renda, dti, rotativo e FICO deslocados:** restaurar os três grupos recuperou 99,6% do desvio do score; só renda+dti, 84%;
-- **lote com rótulos trocados por segmento:** AUC de 0,69 para 0,53 com PSI ≈ 0 e diagnóstico de concept drift.
-
-**Limite do método:** isto mede a **sensibilidade do modelo** a cada grupo sob as hipóteses do DAG. Não prova a causa no mundo real; para isso seriam necessários dados de intervenção (uma política de crédito alterada para um grupo de controle, por exemplo) ou um desenho quase-experimental.
+A execução final usa o mesmo controle reservado da avaliação de performance.
+Consulte [resultados e limites](causal-analysis.md),
+[linha do tempo](incident-timeline.md) e [evidências](evidencias/README.md).
 
 ## 11. Auditoria de privacidade
 

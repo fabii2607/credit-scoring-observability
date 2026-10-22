@@ -167,3 +167,39 @@ def test_concept_drift_is_not_recovered_by_restoring_x(reference, scoring_model)
     assert result["drifted"]["score_psi"] < 0.05
     assert result["reference"]["roc_auc"] - result["drifted"]["roc_auc"] > 0.05
     assert result["diagnosis"].startswith("concept drift")
+
+
+def test_causal_uses_monitoring_psi():
+    from credit_scoring_observability.stats import psi_quantile
+
+    ref = np.array([0.0, 0.0, 0.0, 0.3, 0.3, 0.9])
+    cur = np.array([0.0, 0.1, 0.2, 0.5, 0.8, 1.0])
+    assert score_psi(ref, cur) == pytest.approx(psi_quantile(ref, cur))
+
+
+def test_causal_missing_auc_is_not_declared_stable():
+    from credit_scoring_observability.causal import diagnose
+
+    assert diagnose(
+        {"roc_auc": None, "score_psi": 0.0},
+        {"roc_auc": 0.7},
+        {"recovery_score_psi": None, "recovery_roc_auc": None},
+    ).startswith("performance indisponível")
+
+
+def test_causal_restoration_requires_nonempty_reference(reference):
+    empty = reference.copy()
+    empty["dti"] = np.nan
+    with pytest.raises(ValueError, match="sem valores"):
+        restore_group(reference, empty, ["dti"])
+
+
+def test_causal_requires_score_recovery_for_covariate_hypothesis():
+    from credit_scoring_observability.causal import diagnose
+
+    diagnosis = diagnose(
+        {"roc_auc": 0.7, "score_psi": 0.4},
+        {"roc_auc": 0.7},
+        {"recovery_score_psi": 0.1, "recovery_roc_auc": None},
+    )
+    assert not diagnosis.startswith("covariate shift")

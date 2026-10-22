@@ -1,73 +1,106 @@
-# Plano de Monitorização e Resposta (Runbooks)
+# Plano de monitoramento e resposta
 
-Este documento centraliza as métricas de observabilidade do pipeline de *Credit Scoring* e os procedimentos de resposta a incidentes (Runbooks), garantindo a estabilidade da infraestrutura e a fiabilidade do modelo.
+Runbooks correspondentes às regras em `monitoring/prometheus/alert_rules.yml`.
+Os títulos preservam os nomes dos alertas e suas âncoras em minúsculas.
+A stack envia alertas a um receptor local; comunicações externas não são automáticas.
 
-## 1. Catálogo de Métricas (Etapa 3)
+## Catálogo de métricas
 
-| Grupo | Métrica | Descrição |
-|---|---|---|
-| **Pipeline** | `pipeline_stage_status` | Status de sucesso (1), bloqueio (2) ou falha (0) de cada estágio do pipeline. |
-| **Pipeline** | `pipeline_stage_duration_seconds` | Tempo total de execução do estágio. |
-| **Infraestrutura** | `stage_cpu_seconds` | Tempo de CPU consumido pelo processo durante o estágio. |
-| **Infraestrutura** | `stage_memory_rss_observed_bytes` | Maior RSS observado no início/fim do estágio; não é pico contínuo. |
-| **Pipeline** | `pipeline_rows_processed` | Volume de linhas processadas com sucesso. |
-| **Geral** | `up` | Status de disponibilidade dos alvos de *scrape* do Prometheus. |
+| Métrica | Interpretação |
+|---|---|
+| pipeline_batch_status | -1 executando, 0 falha, 1 sucesso, 2 bloqueado |
+| pipeline_stage_status | 0 falha, 1 sucesso, 2 bloqueado |
+| pipeline_stage_duration_seconds | Duração monotônica por estágio |
+| stage_cpu_seconds | CPU de processo por estágio |
+| stage_memory_rss_observed_bytes | Maior RSS no início/fim, não pico contínuo |
+| batch_rows / pipeline_rows_processed | Linhas lidas / pontuadas do lote mensal |
+| pipeline_last_success_timestamp | Timestamp de sucesso por lote; freshness considera o maior |
+| batch_quarantined / contract_violations | Bloqueio e contagens por regra/severidade/camada |
+| feature_psi / feature_ks_d / feature_js | Distância por feature e método |
+| feature_drift_confirmed / drift_share | Confirmação por feature e proporção entre analisáveis |
+| feature_missing_rate_delta | Diferença da proporção de nulos |
+| score_psi | Mudança na distribuição dos scores |
+| model_roc_auc / model_reference_roc_auc | AUC do lote / controle |
+| model_auc_drop / model_auc_drop_ci_low / model_auc_drop_ci_high | Queda e IC contra controle |
+| model_auc_drop_limit | Limite absoluto configurado para a queda |
+| model_pr_auc / model_brier / approval_rate | Métricas complementares |
+| model_default_rate / label_z / label_z_limit | Prevalência e sinal de mudança |
+| gate_status | 0 OK, 1 WARN, 2 ALERT |
+| gate_retrain_recommended / gate_concept_suspected | Recomendação/suspeita calculada pelo gate |
+| telemetry_delivery_status | 1 sem erros detectados até a publicação; 0 com erro detectado |
+| up | Disponibilidade somente dos alvos configurados de scrape |
 
-## 2. Runbooks de Infraestrutura e Pipeline
+Métricas indisponíveis são omitidas. Labels são técnicos: lote, estágio, feature,
+regra/severidade/camada. Nunca usar identificador de cliente como label.
+Valores de modelo são snapshots por lote; não são contadores acumulados.
+Lote bloqueado não publica AUC ou gate. Falha no envio remoto preserva .prom local,
+mas precisa ser investigada. Verificar resumo de entrega, além do status da análise.
+
+## Runbooks
 
 ### ContractViolation
-- **Significa:** Um lote de dados de entrada quebrou regras estritas do contrato de dados e foi isolado em quarentena.
-- **Investigar:** Consultar o dashboard de Qualidade de Dados no Grafana para identificar a regra quebrada. Ler o ficheiro gerado em `reports/contracts/` correspondente ao lote para ver os exemplos afetados.
-- **Ação:** NÃO ignorar a quarentena. Notificar a equipa de engenharia de dados (data sources) sobre a quebra de padrão. O pipeline continuará a processar os lotes seguintes normalmente.
+
+- **Significa:** O contrato bloqueou o lote; batch_quarantined=1. Não houve predição.
+- **Investigar:** Consultar o contrato local e o resumo agregado no MLflow; identificar regra e origem dos dados.
+- **Ação:** Corrigir a origem e reprocessar o lote completo. Não remover o bloqueio nem usar dados de quarentena como treino.
 
 ### PipelineStageFailed
-- **Significa:** Um estágio específico do pipeline (ingestão, validação, etc.) falhou e devolveu um erro fatal.
-- **Investigar:** Aceder ao Grafana, navegar para o Loki (pesquisando por `{batch_id="<lote>"}`) e consultar o estágio e o tipo do erro. Mensagens e stack traces de exceções não são exportados. Clicar no botão do *Tempo* no log para visualizar a cascata do trace e identificar o ponto exato da falha de hardware ou código.
-- **Ação:** Corrigir o *bug* no código-fonte, criar um *pull request* com testes unitários, aprovar no CI e voltar a processar o lote falhado de forma isolada.
+
+- **Significa:** Um estágio teve falha inesperada (status 0). Bloqueio esperado usa status 2.
+- **Investigar:** Consultar reports/monitoring/<lote>/run.json, tipo do erro nos logs Loki e trace do estágio no Tempo.
+- **Ação:** Corrigir o problema, validar com teste e reexecutar o lote. Mensagens/tracebacks com valores de clientes não são exportados.
 
 ### MonitoringTargetDown
-- **Significa:** Um dos alvos de scrape configurados não responde ao Prometheus. No modo core, somente Prometheus e Pushgateway são cobertos; o modo completo adiciona Loki, Tempo, Alloy e Alertmanager.
-- **Investigar:** Aceder ao terminal do servidor e correr `docker compose ps` para verificar o status dos contentores. Ler os logs nativos do contentor afetado com `docker logs <nome_do_contentor>`.
-- **Ação:** Tentar reiniciar o serviço isoladamente (`docker compose restart <serviço>`). Se falhar, verificar limites de memória do host (OOM Killer) ou configurações de rede corrompidas.
+
+- **Significa:** Um alvo de scrape configurado está indisponível. Core cobre Prometheus/Pushgateway; full acrescenta Loki, Tempo, Alloy e Alertmanager.
+- **Investigar:** Consultar Targets no Prometheus, docker compose ps e logs do serviço. Isso não cobre automaticamente todos os processos, como MLflow.
+- **Ação:** Recuperar o serviço e confirmar o scrape. Não interpretar ausência de série como valor zero.
 
 ### PipelineStale
-- **Significa:** O pipeline de *scoring* não processa um lote com sucesso há mais de 35 dias.
-- **Investigar:** Verificar quando `make monitor` foi executado e consultar o resumo em `reports/monitoring/`. Não há Airflow obrigatório. Avaliar se o servidor de ingestão parou de enviar ficheiros.
-- **Ação:** Reativar a automação de *scheduling* se estiver em pausa. Se a ausência de dados for intencional (ex: paragem de negócio), silenciar o alerta temporariamente no Alertmanager.
+
+- **Significa:** Não existe evidência de sucesso ou o maior timestamp de sucesso está há mais de 35 dias.
+- **Investigar:** Verificar última execução de make monitor, relatórios e ambiente. Não há agendador/Airflow obrigatório.
+- **Ação:** Executar ou corrigir o processamento conforme a periodicidade acordada. Se a ausência for intencional, registrar o motivo antes de silenciar.
 
 ### FeatureDriftCritical
-- **Significa:** Ocorreu um desvio de distribuição severo numa funcionalidade (PSI > 0.25 e KS > 0.10).
-- **Investigar:** Abrir o relatório HTML do Evidently (gerado na Etapa 2) para a funcionalidade afetada e comparar os histogramas do lote atual contra os da Referência.
-- **Ação:** Investigar com o negócio se a mudança no perfil do cliente é real (ex: nova campanha de marketing) ou se é um problema de extração de dados. O alerta `FeatureDriftWarning` estará silenciado automaticamente pelo Alertmanager devido a inibição.
 
-### ModelPerformanceDrop
-- **Significa:** A AUC realizada caiu mais que o limite configurado contra o controle fora do treino.
-- **Investigar:** Verificar os painéis de *Drift* e *Performance* no Grafana e cruzar com os relatórios analíticos gerados no MLflow.
-- **Ação:** Investigar qualidade dos rótulos, intervalo da queda e recomendação do gate. Retreinamento depende de avaliação humana; esse alerta não o executa.
-
-## Integração e métricas do modelo
-
-O [guia de execução](observability-integration.md) documenta comandos, modos
-local/Docker, endereços, estados e métricas. O [gate](experiment-analysis.md)
-é a fonte da recomendação de retreinamento, com confirmação pelo IC e cobertura
-supervisionada. Os alertas consomem os resultados publicados do mesmo lote.
+- **Significa:** Uma feature tem drift confirmado: numérica PSI > 0,25 e KS D > 0,10; categórica JS >= 0,10.
+- **Investigar:** Abrir o HTML Evidently do lote, verificar histograma, nulos, contrato e versões originais/alteradas.
+- **Ação:** Investigar composição dos clientes e origem dos dados; comparar AUC, Brier e aprovação. Drift isolado não autoriza retreinamento.
 
 ### FeatureDriftWarning
 
-PSI na faixa de atenção. Comparar histogramas e ausências; não indica
-necessidade de retreino isoladamente.
+- **Significa:** PSI da feature entre 0,10 e 0,25, inclusive.
+- **Investigar:** Verificar tendência, tamanho da amostra e score PSI no HTML e nas métricas. O alerta crítico da mesma feature pode inibir o warning.
+- **Ação:** Reforçar monitoramento e investigar persistência. Não classificar PSI em WARN como drift confirmado.
+
+### ModelPerformanceDrop
+
+- **Significa:** Queda absoluta de AUC contra o controle maior que o limite configurado, em lote analisado com sucesso.
+- **Investigar:** Consultar AUC do controle/lote, IC da queda, cobertura de rótulos, maturação dos desfechos e comparação pareada.
+- **Ação:** Investigar degradação e consultar o gate. Esse alerta observa a queda pontual; confirmação para avaliar retreinamento exige critérios adicionais.
 
 ### ConceptDriftSuspected
 
-Gate aponta degradação sem drift marginal confirmado. Investigar rótulos,
-mudanças conjuntas e comparação pareada; o diagnóstico não prova causa econômica.
+- **Significa:** Gate aponta degradação sem drift marginal confirmado; é suspeita operacional.
+- **Investigar:** Verificar rótulos, dependências conjuntas, originais e análise de sensibilidade. PSI baixo não prova estabilidade de P(Y|X).
+- **Ação:** Investigar mecanismos possíveis e revisão de dados/modelo. Não apresentar o diagnóstico como causalidade econômica.
 
 ### LabelDrift
 
-Prevalência dos rótulos mudou além do limite z configurado. Verificar maturação
-dos desfechos e composição da população; mudança de P(Y) não prova P(Y|X).
+- **Significa:** Mudança de prevalência ultrapassou o limite z configurado, em lote bem-sucedido.
+- **Investigar:** Comparar taxas de default, maturação/cobertura dos rótulos e segmentos. Conferir se foi uma intervenção sintética conhecida.
+- **Ação:** Investigar mudança de P(Y); não concluir mudança de P(Y|X) só com esse alerta.
 
 ### RetrainRecommended
 
-Gate recomenda investigar e avaliar retreinamento com queda confirmada.
-Consultar HTML, ICs, cobertura e run MLflow. Não iniciar promoção automática.
+- **Significa:** Gate recomenda avaliar retreinamento: queda e IC acima do limite, com quantidade/cobertura de rótulos e reamostragens suficientes.
+- **Investigar:** Abrir a recomendação no HTML, JSON gate e run MLflow; revisar ICs, dados, Brier, aprovação e limites da simulação.
+- **Ação:** Encaminhar à avaliação humana. Um eventual challenger precisa de validação própria; nenhum treino ou promoção é disparado automaticamente.
+
+## Referências
+
+[Execução e serviços](observability-integration.md),
+[política do gate](experiment-analysis.md),
+[linha do tempo](incident-timeline.md) e
+[evidências](evidencias/README.md).
