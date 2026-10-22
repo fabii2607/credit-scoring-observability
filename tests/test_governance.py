@@ -1,3 +1,4 @@
+import json
 import os
 import time
 
@@ -14,6 +15,7 @@ from credit_scoring_observability.causal import (
 from credit_scoring_observability.config import REGION_COLUMN, SCORE_COLUMN, TARGET
 from credit_scoring_observability.fairness import (
     approval_disparity,
+    fairness_by_batches,
     fairness_by_region,
 )
 from credit_scoring_observability.mitigation import (
@@ -44,6 +46,34 @@ def test_approval_disparity_without_labels():
     result = approval_disparity(np.array([1, 0, 0, 0]), pd.Series(["A", "A", "B", "B"]))
     assert result["approval_rate"] == {"A": 0.5, "B": 1.0}
     assert result["disparate_impact"] == 0.5
+
+
+def test_fairness_by_batches_scores_each_manifest_batch(tmp_path, scoring_model):
+    batches = [
+        {"batch_id": "2026-01", "scenario": "stable", "intensity": 0.0},
+        {"batch_id": "2026-03", "scenario": "data_drift", "intensity": 0.6},
+    ]
+    for seed, batch in enumerate(batches, start=20):
+        batch["path"] = f"{batch['batch_id']}.parquet"
+        make_model_batch(n=1_500, seed=seed).to_parquet(tmp_path / batch["path"])
+    # O lote corrompido não deve ser lido nem pontuado (o arquivo nem existe).
+    batches.append({"batch_id": "corrupted", "path": "corrupted.parquet"})
+    (tmp_path / "manifest.json").write_text(
+        json.dumps({"batches": batches}), encoding="utf-8"
+    )
+
+    report = fairness_by_batches(scoring_model, tmp_path)
+
+    assert report["model_version"] == scoring_model.version
+    assert report["threshold"] == scoring_model.threshold
+    assert report["source"] == "data/production (make simulate)"
+    assert list(report["batches"]) == ["2026-01", "2026-03"]
+    assert report["batches"]["2026-03"]["scenario"] == "data_drift"
+    assert report["batches"]["2026-03"]["intensity"] == 0.6
+    for result in report["batches"].values():
+        assert {"approval_rate", "fpr", "tpr", "n", "passes_four_fifths"} <= set(result)
+        assert 0 < result["disparate_impact"] <= 1
+        assert sum(result["n"].values()) == 1_500
 
 
 # ── Mitigação ────────────────────────────────────────────────────────────────
