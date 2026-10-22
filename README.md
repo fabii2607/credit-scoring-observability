@@ -2,9 +2,9 @@
 
 **Tech Challenge – Fase 04 | Pós-Tech em Machine Learning Engineering (FIAP)**
 
-Projeto acadêmico de classificação binária de risco de crédito, qualidade de dados e preparação para monitoramento de modelos. A base é o **All Lending Club Loan Data**. A frente documentada aqui implementa EDA, engenharia e preparação de features, Regressão Logística baseline (V1), otimização experimental (V2), contrato de entrada com Pandera e demonstração do bloqueio de um lote inválido (*bad batch*).
+Projeto acadêmico de classificação binária de risco de crédito com o **All Lending Club Loan Data**: preparação de dados, Regressão Logística V2, contrato Pandera, simulação de drift, avaliação de performance, recomendações operacionais e observabilidade integrada.
 
-> **Estado da integração:** a Etapa 1 (dados, modelo e contrato) está pronta em notebooks e em scripts. A Etapa 2 já gera lotes simulados, predições e relatórios de drift/performance com Evidently. A base de observabilidade tem métricas, logs, traces e dashboard; sua integração com os novos resultados e o fechamento de governança ainda estão em andamento.
+> **Estado da entrega:** dados/modelo/contrato e monitoramento dos sete meses estão implementados. A observabilidade integra MLflow, Prometheus, Grafana, Loki e Tempo. O gate recomenda ações para revisão humana; não há treinamento ou promoção automática. Veja o [guia de entrega e reprodução](docs/delivery.md) e as [evidências da execução de referência](docs/evidencias/README.md).
 
 ## 1. Dataset e definição do problema
 
@@ -24,6 +24,14 @@ O arquivo de empréstimos aceitos tem aproximadamente **2.260.701 registros e 15
 |---|---|
 | `0`: não inadimplente | `Fully Paid`; `Does not meet the credit policy. Status:Fully Paid` |
 | `1`: inadimplente | `Charged Off`; `Default`; `Does not meet the credit policy. Status:Charged Off` |
+
+**Por que o mesmo prefixo aparece nas duas classes?** `Does not meet the credit policy`
+é parte do status original do dataset e não define, sozinho, inadimplência.
+O desfecho após `Status:` é diferente: `Fully Paid` indica quitação e entra
+na classe 0; `Charged Off` indica baixa por perda e entra na classe 1.
+A classificação segue [GOOD_STATUS e BAD_STATUS](src/credit_scoring_observability/preprocessing.py).
+Esses empréstimos são mantidos na população do projeto; não representam uma
+regra de aprovação atual nem tornam os dois desfechos equivalentes.
 
 `Current`, `Late`, `In Grace Period` e registros sem `loan_status` ficam fora da modelagem porque não representam desfecho final conhecido. A prevalência da classe 1 é de aproximadamente **19,98%**.
 
@@ -102,7 +110,14 @@ credit-scoring-observability/
 │   ├── train.py · evaluate.py         # treino da V2, métricas e seleção de threshold
 │   ├── registry.py                    # load_model(): pipeline + threshold versionado
 │   ├── data_contract.py · validate.py # contrato Pandera, CLI de validação, quarentena
-│   └── synthetic.py                   # dados sintéticos para testes e protótipos
+│   ├── simulation.py                  # lotes e intervenções reproduzíveis
+│   ├── analyze.py · drift.py           # execução e estatísticas de drift
+│   ├── performance.py · comparison.py # avaliação e comparação pareada
+│   ├── gate.py · drift_report.py       # recomendações e HTML Evidently
+│   ├── run_batch.py · run_all.py       # execução com observabilidade
+│   ├── observation.py · metrics.py     # publicação e registro da execução
+│   ├── causal.py                       # sensibilidade à restauração de marginais
+│   └── synthetic.py                    # dados sintéticos para testes
 ├── tests/                             # pytest, só com dados sintéticos
 ├── docs/
 │   └── guias/                         # guias do projeto anterior (referência conceitual)
@@ -114,13 +129,18 @@ As pastas locais sob `data/` são criadas pelos notebooks e pelos scripts confor
 
 ## 4. Observabilidade
 
-O pipeline emite telemetria correlacionada usando a identidade do MLflow como âncora principal.
+Execute `make monitor` para processar os lotes com métricas, logs e traces.
+`make analyze` usa o mesmo núcleo sem a instrumentação adicional.
 
-* **Métricas:** Envio via Prometheus Pushgateway (violações de contrato, volumetria, consumo de hardware).
-* **Logs:** Estruturados em JSONL via `structlog`, consumidos pelo Grafana Alloy e indexados no Loki. Identificadores pessoais são mascarados na origem.
-* **Traces:** Tempos de execução de cada estágio mapeados via OpenTelemetry e exportados para o Tempo.
-* **Correlação:** O `trace_id` injetado nos logs corresponde exatamente ao ID gerado pelo MLflow. No Grafana, acessar um log no Loki exibe um link direto para o diagrama de execução no Tempo.
-* **Dashboard:** Gerado dinamicamente via script e disponível no Grafana (`http://localhost:3000`), aba Dashboards > Import (upload de `monitoring/grafana/dashboard.json`).
+- **Métricas:** snapshots por lote no Pushgateway, com cópia local em `reports/metrics/`.
+- **Logs:** JSONL via structlog, coletado pelo Alloy e consultado no Loki.
+- **Traces:** estágios instrumentados com OpenTelemetry e exportados ao Tempo.
+- **MLflow:** versão, threshold, métricas e artefatos HTML/JSON agregados.
+- **Correlação:** trace ID próprio do OpenTelemetry, relacionado ao run MLflow por tag.
+- **Dashboard:** provisionado automaticamente no Grafana ao iniciar a stack.
+
+O [guia de observabilidade](docs/observability-integration.md) explica os modos
+local/Docker, portas, estados e como verificar a entrega aos serviços.
 
 ## 5. Ordem de execução dos notebooks
 
@@ -204,9 +224,9 @@ uv run pytest tests/test_data_contract.py tests/test_validate.py -v
 
 Os testes usam só dados sintéticos (`synthetic.py`), então rodam no CI sem o CSV do Kaggle. O CI (`.github/workflows/ci.yml`) roda `ruff` e `pytest` em todo PR.
 
-## 9. Como continuar
+## 9. Execução da simulação e análise
 
-**Checklist mínimo para os próximos responsáveis:** Python/`uv` configurados (`make setup`); dataset em `data/raw/`; `make prepare && make train` executados (Referência, pool e modelo V2 com threshold); todo lote validado pelo contrato antes da inferência (`registry.load_model().score` já aplica o contrato das features); `make test` aprovado.
+**Pré-requisitos de execução:** Python/`uv` configurados (`make setup`); dataset em `data/raw/`; `make prepare && make train` executados (Referência, pool e modelo V2 com threshold); todo lote validado pelo contrato antes da inferência (`registry.load_model().score` já aplica o contrato das features); `make test` aprovado.
 
 ### Simulação de produção
 
@@ -219,8 +239,8 @@ maio–julho têm rótulos alterados por segmento, com X preservado.
 Os arquivos ficam em `data/production/`, com cópias originais em `originals/`,
 reservas em `reserves/` e rastreabilidade em `manifest.json`. Os meses de 2026
 representam a simulação; a data histórica de originação é preservada. O comando
-não treina o modelo nem gera relatórios Evidently. A integração desses lotes ao
-pipeline de observabilidade ainda está pendente.
+não treina o modelo nem gera relatórios Evidently. `make monitor` integra a
+análise desses lotes à observabilidade.
 
 Execute `make analyze` para validar e pontuar os sete meses, gerar HTMLs em
 `reports/drift/` e resultados JSON/CSV em `reports/performance/`. Abra o HTML
@@ -271,7 +291,7 @@ Razão de impacto desigual **0,983** (regra dos 4/5: 0,8). A mitigação por thr
 - a diferença de FPR cairia de 1,4 para 0,5 p.p.;
 - usar a região na decisão seria tratamento diferenciado por proxy de raça (Art. 6º, IX).
 
-O que se adota é a região fora do modelo, a medição por lote, o guardrail no retreino (um challenger não pode piorar a razão em mais de 0,05) e a revisão humana.
+A região permanece fora do modelo. A análise de fairness e a revisão humana fazem parte da proposta de governança. O guardrail de não piorar a razão em mais de 0,05 é uma política proposta para eventual challenger; não há promoção ou retreinamento automatizado implementado.
 
 ## 11. Análise causal
 
@@ -287,18 +307,29 @@ flowchart LR
     reneg[Renegociação / aperto de renda] -. muda P de default dado X .-> default
 ```
 
-As setas cheias mudam **quem chega** (covariate shift); a tracejada muda **o que acontece com o mesmo perfil** (concept drift). Para separar os dois, `make causal` faz uma **intervenção por grupo de variáveis ligadas**: renda + dti, rotativo e FICO. A distribuição do lote é substituída pela da Referência, preservando a ordem dentro do lote, e mede-se quanto o score e a AUC voltam ao normal.
+O DAG apresenta **hipóteses ilustrativas**, não relações causais estimadas.
+`make causal` avalia a sensibilidade do modelo ao restaurar as marginais dos
+grupos renda + DTI, rotativo e FICO. O mapeamento por quantis é monotônico por
+coluna; não garante as relações estruturais do DAG nem a distribuição conjunta.
 
-| Sinal | Diagnóstico | Ação |
-|---|---|---|
-| Score muda (PSI > 0,10), AUC estável, restaurar X devolve o score | **Covariate shift** | Monitorar/recalibrar, sem retreino |
-| AUC cai > 0,05 e restaurar X não recupera | **Concept drift** | Retreinar com dados recentes |
+A AUC é comparada ao mesmo controle reservado usado pelo monitoramento.
+Nos lotes finais, os resultados são compatíveis com deslocamento de entradas
+em março/abril e degradação não recuperada pela restauração em maio–julho.
+Isso não prova causalidade econômica nem substitui o gate. Consulte a
+[análise de sensibilidade e seus limites](docs/causal-analysis.md) e a
+[linha do tempo do incidente](docs/incident-timeline.md).
 
-O método foi validado com o modelo V2 real: num lote com renda, dti, rotativo e FICO deslocados, restaurar os grupos recuperou 99,6% do desvio do score (84% só com renda + dti); num lote com rótulos trocados por segmento, a AUC caiu de 0,69 para 0,53 com PSI ≈ 0, e o diagnóstico foi concept drift. *Os números dos lotes M1–M7 entram com a execução de referência (Etapas 2 e 3).* **Limite:** isto mede a sensibilidade do modelo sob as hipóteses do DAG; não prova a causa no mundo real.
+## 12. Guias da entrega
 
-A [análise consolidada e política do gate](docs/experiment-analysis.md) explica
-como consultar os gráficos em `reports/experiment/`, interpretar os intervalos
-e revisar a recomendação destacada no topo de cada HTML.
+- [Reprodução e critérios de entrega](docs/delivery.md).
+- [Model card da V2](docs/model-card.md).
+- [Decisões sobre drift](docs/decisions/0001-drift-statistics.md) e
+  [baseline de performance e gate](docs/decisions/0002-performance-gate.md).
+- [Análise consolidada e política do gate](docs/experiment-analysis.md).
+- [Execução com observabilidade](docs/observability-integration.md).
+- [Runbooks dos alertas](docs/monitoring-plan.md).
+- [Evidências públicas](docs/evidencias/README.md).
 
-A [integração de observabilidade](docs/observability-integration.md) mostra como
-executar os lotes com MLflow, Prometheus, Grafana, Loki e Tempo, incluindo modo local.
+`docs/guias/` preserva material conceitual anterior e pode citar outro dataset
+ou outra organização. Para executar este repositório, use os comandos e guias
+atuais listados acima.
