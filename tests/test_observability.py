@@ -1,7 +1,10 @@
 import json
+import re
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
+import yaml
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -156,3 +159,22 @@ def test_real_batches_continue_after_block_and_failure(
     ]:
         content = path.read_text(encoding="utf-8")
         assert not any(value in content for value in ids)
+
+
+def test_alert_rules_have_labels_and_runbook_anchors():
+    """Toda regra tem severity/team, runbook_url e um runbook com o mesmo nome."""
+    root = Path(__file__).resolve().parents[1]
+    rules = yaml.safe_load(
+        (root / "monitoring/prometheus/alert_rules.yml").read_text(encoding="utf-8")
+    )
+    plan = (root / "docs/monitoring-plan.md").read_text(encoding="utf-8")
+    runbooks = set(re.findall(r"^### (\w+)$", plan, flags=re.MULTILINE))
+    names = []
+    for group in rules["groups"]:
+        for rule in group["rules"]:
+            names.append(rule["alert"])
+            assert {"severity", "team"} <= set(rule["labels"]), rule["alert"]
+            url = rule["annotations"]["runbook_url"]
+            assert url.endswith("#" + rule["alert"].lower()), rule["alert"]
+            assert rule["alert"] in runbooks, rule["alert"]
+    assert names, "nenhuma regra carregada"

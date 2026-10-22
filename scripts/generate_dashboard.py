@@ -37,6 +37,11 @@ def create_dashboard():
             "stat",
         ),
         ("Último sucesso (Unix timestamp)", "pipeline_last_success_timestamp", "stat"),
+        (
+            "Alertas ativos por regra",
+            'count by (alertname) (ALERTS{alertstate="firing"})',
+            "table",
+        ),
     ]
     for index, (title, expression, kind) in enumerate(specs):
         targets = [
@@ -87,7 +92,7 @@ def create_dashboard():
             "title": "Logs: trace_id abre o Tempo",
             "type": "logs",
             "datasource": {"type": "loki", "uid": "loki"},
-            "gridPos": {"h": 10, "w": 24, "x": 0, "y": 42},
+            "gridPos": {"h": 10, "w": 24, "x": 0, "y": ((len(specs) + 2) // 3) * 7},
             "targets": [{"refId": "A", "expr": '{job="credit-scoring-pipeline"}'}],
         }
     )
@@ -104,7 +109,9 @@ def create_dashboard():
     }
     output = Path(__file__).resolve().parents[1] / "monitoring/grafana/dashboard.json"
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(dashboard, ensure_ascii=False, indent=2) + "\n")
+    output.write_text(
+        json.dumps(dashboard, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     print(f"Dashboard gerado: {output.relative_to(output.parents[2])}")
     return dashboard
 

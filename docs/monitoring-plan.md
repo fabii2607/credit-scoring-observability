@@ -29,6 +29,7 @@ A stack envia alertas a um receptor local; comunicações externas não são aut
 | gate_retrain_recommended / gate_concept_suspected | Recomendação/suspeita calculada pelo gate |
 | telemetry_delivery_status | 1 sem erros detectados até a publicação; 0 com erro detectado |
 | up | Disponibilidade somente dos alvos configurados de scrape |
+| ALERTS{alertstate="firing"} / count by (alertname) (ALERTS{alertstate="firing"}) | Quantidade de alertas ativos por regra, calculada pelo Prometheus (falha: PipelineStageFailed, ContractViolation; drift e modelo: FeatureDrift*, LabelDrift, ConceptDriftSuspected, ModelPerformanceDrop, RetrainRecommended); painel "Alertas ativos por regra" no dashboard |
 
 Métricas indisponíveis são omitidas. Labels são técnicos: lote, estágio, feature,
 regra/severidade/camada. Nunca usar identificador de cliente como label.

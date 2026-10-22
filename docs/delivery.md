@@ -23,7 +23,10 @@ make prepare
 make train
 make simulate
 make analyze
-make causal
+make monitor            # pipeline instrumentado em modo local, sem Docker
+make causal             # Etapa 4; usa os lotes de make simulate
+make fairness           # fairness por região no pool
+make fairness-batches   # fairness por região em cada lote de make simulate
 make lint
 make test
 ```
@@ -109,9 +112,9 @@ binários de modelo, logs brutos ou banco MLflow. Esses materiais não devem ser
 adicionados por `git add .`. Artefatos de modelo/dados seguem o canal combinado
 pelo grupo.
 
-Os commits e a eventual tag `pacote-2` são criados pelo responsável após revisar
-as alterações. A entrega técnica não cria tag, commit, push ou publicação
-automaticamente.
+As tags `execucao-referencia` e `pacote-2` apontam para 0e42046 (merge do
+PR #17), criadas pelo responsável após revisar as alterações. A entrega técnica
+não cria tag, commit, push ou publicação automaticamente.
 
 ## Verificação antes da entrega
 

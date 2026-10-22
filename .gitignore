@@ -54,3 +54,6 @@ reports/monitoring/
 # Análise de sensibilidade e manifesto local de entrega
 reports/causal/
 reports/release/
+
+# Handoffs por etapa: distribuídos à parte (PR #9), não versionados
+docs/handoff/

@@ -576,6 +576,36 @@
     },
     {
       "id": 19,
+      "title": "Alertas ativos por regra",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 42
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count by (alertname) (ALERTS{alertstate=\"firing\"})",
+          "legendFormat": "{{batch_id}} {{stage}} {{feature}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 20,
       "title": "Logs: trace_id abre o Tempo",
       "type": "logs",
       "datasource": {
@@ -586,7 +616,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 42
+        "y": 49
       },
       "targets": [
         {
