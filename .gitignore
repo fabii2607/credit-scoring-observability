@@ -50,3 +50,7 @@ reports/experiment/
 
 # Execuções instrumentadas e evidências locais de telemetria
 reports/monitoring/
+
+# Análise de sensibilidade e manifesto local de entrega
+reports/causal/
+reports/release/
