@@ -369,16 +369,3 @@ marginais não substituem. Consulte a
 `docs/guias/` preserva material conceitual anterior e pode citar outro dataset
 ou outra organização. Para executar este repositório, use os comandos e guias
 atuais listados acima.
-
-## 13. Equipe e apresentação
-
-| Integrante | Etapa |
-|---|---|
-| Fabi | Etapa 1: notebooks de EDA, pré-processamento, baseline V1/V2 e contrato Pandera |
-| Helio | Etapa 2: simulação, estatísticas de drift, gate e análise consolidada; integração e congelamento da entrega |
-| Pedro | Etapa 3: pipeline instrumentado, métricas, logs, traces, stack Docker e dashboard |
-| Erick | Etapa 4: governança (LGPD, fairness, causalidade, post-mortem) e esqueleto do projeto (CI, scripts da Etapa 1) |
-
-Os commits seguem Conventional Commits (`tipo(escopo): descrição`); as exceções são o commit inicial do template e `ae07261`. O `.mailmap` unifica as identidades git dos autores.
-
-**Vídeo STAR (até 5 minutos):** _link a inserir pelo grupo antes da entrega_. Roteiro sugerido: **Situação**, degradação silenciosa de um modelo de crédito em produção (seção 1); **Tarefa**, interceptar dados ruins, detectar drift e garantir compliance; **Ação**, contrato Pandera com quarentena (`make demo-contract`), simulação e detecção com Evidently, PSI e KS (`make simulate`, `make analyze`), observabilidade com alertas (`make monitor`, Grafana) e plano de governança (seções 10 e 11); **Resultado**, a tabela de [docs/evidencias/README.md](docs/evidencias/README.md) (AUC de 0,70 para 0,56 com 21 alertas) e as lições do [post-mortem](docs/postmortem.md).
