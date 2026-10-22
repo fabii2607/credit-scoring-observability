@@ -73,6 +73,7 @@ make help           # todos os alvos disponíveis
 | `make demo-contract` | `uv run python -m credit_scoring_observability.validate --demo-corrupted` |
 | `make fairness` | `uv run python -m credit_scoring_observability.mitigation` |
 | `make fairness-batches` | `uv run python -m credit_scoring_observability.fairness` |
+| `make monitor` | `uv run python -m credit_scoring_observability.run_all` |
 | `make causal` | `uv run python -m credit_scoring_observability.causal` |
 | `make purge-quarantine` | `uv run python -m credit_scoring_observability.retention` |
 
@@ -84,12 +85,12 @@ Para subir a infraestrutura de observabilidade da **Etapa 3** (requer Docker):
 
 ```powershell
 # Sobe Prometheus, Grafana, MLflow, Loki, Tempo e Alloy (ou: make up-full)
-docker compose --profile core --profile logs-traces up -d
+docker compose --profile core --profile alerting --profile logs-traces up -d
 
 # Executa o pipeline de lotes para gerar métricas e rastreios
 uv run --env-file .env python -m credit_scoring_observability.run_all
 
-# Gera o Dashboard Definitivo no Grafana via API
+# (Opcional) regenera monitoring/grafana/dashboard.json, provisionado ao subir a stack
 uv run python scripts/generate_dashboard.py
 ```
 
@@ -105,6 +106,7 @@ credit-scoring-observability/
 ├── models/                            # modelo (.joblib, local) e metadados/métricas (.json)
 ├── notebooks/                         # 01_eda … 05_data_contract
 ├── reports/contracts/                 # relatório JSON de cada lote validado (local)
+├── reports/{drift,performance,gate,causal,metrics,monitoring}/  # saídas de make analyze/monitor (locais)
 ├── reports/fairness/                  # fairness_report.json (pool, versionado); fairness_by_batch.json (por lote simulado, versionado; make fairness-batches)
 ├── src/credit_scoring_observability/
 │   ├── config.py · parameters.py      # caminhos, colunas e params.yaml validado
@@ -121,10 +123,18 @@ credit-scoring-observability/
 │   ├── run_batch.py · run_all.py       # execução com observabilidade
 │   ├── observation.py · metrics.py     # publicação e registro da execução
 │   ├── causal.py                       # sensibilidade à restauração de marginais
+│   ├── retention.py                    # descarte da quarentena após 30 dias (LGPD)
 │   ├── fairness.py · mitigation.py     # viés por região; mitigação avaliada, não adotada
 │   └── synthetic.py                    # dados sintéticos para testes
 ├── tests/                             # pytest, só com dados sintéticos
+├── scripts/                           # k_anonymity, generate_dashboard, check_observability, freeze_evidence, build_delivery_package
+├── monitoring/                        # prometheus (regras de alerta), grafana (dashboard provisionado), alertmanager, loki, tempo, alloy
+├── docker-compose.yml                 # stack de observabilidade (profiles core, alerting, logs-traces)
 ├── docs/
+│   ├── lgpd.md · model-card.md · postmortem.md · monitoring-plan.md · delivery.md
+│   ├── evidencias/                    # execução de referência congelada (JSON, HTML, manifesto com hashes)
+│   ├── decisions/                     # ADRs de drift e gate
+│   ├── legado/                        # capturas de uma execução anterior (14/10)
 │   └── guias/                         # guias do projeto anterior (referência conceitual)
 ├── .github/workflows/ci.yml           # lint + testes
 ├── Makefile · params.yaml · pyproject.toml · uv.lock
@@ -151,6 +161,8 @@ local/Docker, portas, estados e como verificar a entrega aos serviços.
 
 Abra os notebooks **em ordem**, com o kernel do ambiente do projeto. Eles pressupõem que `../data/` aponta para a pasta local de dados.
 
+Os notebooks estão versionados **com as saídas** da execução de 21/10/2026 no ambiente do `uv.lock` (scikit-learn 1.9, pandas 3): métricas, tabelas e gráficos podem ser lidos no GitHub sem o dataset. Os números finais da V2 também estão em `models/*.json` e em [docs/evidencias/](docs/evidencias/README.md).
+
 | Notebook | Objetivo e entregável |
 |---|---|
 | `01_eda.ipynb` | Análise global em chunks, definição de target, nulos, auditoria de features/leakage, análise numérica, categórica e temporal. |
@@ -174,7 +186,7 @@ Os arquivos são gerados **localmente**, na pasta `models/`:
 
 A V1 utiliza threshold de classificação de 0,50. Na execução registrada da V2, o threshold selecionado na validação foi **0,20**. Para reproduzir a decisão V2, **não use diretamente `pipeline.predict()`**, que segue a regra padrão do estimador. Leia `decision_threshold` dos metadados e compare com `predict_proba(X)[:, 1]`.
 
-A comparação V1 × V2 mostrou, aproximadamente, Recall de **4,5%** na V1 e **63,5%** na V2, acompanhado de queda de Precision. ROC-AUC permaneceu perto de **0,694** e Average Precision perto de **0,357**. São resultados experimentais; os valores exatos devem ser lidos dos JSONs e gráficos gerados nos notebooks. Seleção de modelo/threshold foi feita na validação, não no teste final.
+A comparação V1 × V2 mostrou, aproximadamente, Recall de **4,5%** na V1 e **63,5%** na V2, acompanhado de queda de Precision. ROC-AUC permaneceu perto de **0,694** e Average Precision perto de **0,357**. São resultados experimentais; os valores exatos devem ser lidos dos JSONs em `models/` e das saídas versionadas dos notebooks 03 e 04. Seleção de modelo/threshold foi feita na validação, não no teste final.
 
 **Compartilhamento importante:** `.joblib` e `.pkl` estão no `.gitignore` e **não aparecem ao clonar o GitHub**. Para executar a inferência sem retreinar, cada colega deve receber ambos os arquivos da V2 (`credit_scoring_optimized.joblib` e `credit_scoring_optimized_metadata.json`) por um canal aprovado pelo grupo, por exemplo uma Release do repositório ou armazenamento compartilhado. O JSON de metadados sozinho **não contém o modelo**. Como alternativa, rode `make prepare && make train` (≈ 1,5 min), que reproduz a V2 com as mesmas métricas do notebook 04, ou execute os notebooks 03 e 04, usando o mesmo dataset, código e `uv.lock`. Carregue arquivos `joblib` apenas de origem confiável.
 
@@ -182,9 +194,9 @@ A comparação V1 × V2 mostrou, aproximadamente, Recall de **4,5%** na V1 e **6
 
 O contrato fica em `src/credit_scoring_observability/data_contract.py` e valida as **23 features finais**, isto é, após `engineer_features()` e `split_features_target()`. Ele **não** recebe diretamente as 151 colunas do CSV bruto.
 
-Valida, entre outros pontos: presença e ausência de colunas extras, empréstimo positivo, `term` em `{36, 60}`, renda não negativa/obrigatória, DTI não negativo quando presente, FICO em faixa aceita, categorias permitidas de `application_type` e coerência entre `emp_length_years == -1` e `emp_length_missing == 1`. Alguns nulos numéricos são permitidos porque o pipeline faz imputação. O contrato não aplica um teto artificial de 100% à utilização de crédito rotativo.
+Valida, entre outros pontos: presença e ausência de colunas extras, empréstimo positivo, `term` em `{36, 60}`, renda não negativa/obrigatória, DTI não negativo quando presente, FICO em faixa aceita, categorias permitidas de `application_type` e coerência entre `emp_length_years == -1` e `emp_length_missing == 1`. Alguns nulos numéricos são permitidos porque o pipeline faz imputação. O contrato não aplica um teto artificial de 100% à utilização de crédito rotativo. O dataset não tem idade, então as regras rígidas equivalentes às do enunciado são: renda obrigatória (`annual_inc` não nula), FICO em [300, 850], valor do empréstimo positivo, prazo em {36, 60} e cliente não duplicado no lote (`duplicate_customer_id`, camada de lote do `validate.py`); todas bloqueiam o lote.
 
-Depois de obter o modelo e o Reference Dataset, este é um exemplo de inferência **a partir da raiz do repositório**:
+Depois de `make prepare && make train`, este é um exemplo de inferência **a partir da raiz do repositório**:
 
 ```python
 from pathlib import Path
@@ -198,7 +210,7 @@ from credit_scoring_observability.data_contract import (
     predict_proba_validated,
 )
 
-batch = pd.read_csv("data/reference/reference_dataset.csv", nrows=5)
+batch = pd.read_parquet("data/processed/reference_sample.parquet").head(5)
 batch = batch.loc[:, MODEL_FEATURES]  # sem target e sem issue_date
 
 model = joblib.load("models/credit_scoring_optimized.joblib")
@@ -215,7 +227,7 @@ O gate `predict_proba_validated()` valida uma cópia profunda do lote antes de i
 
 ## 8. Bad Batch e testes automatizados
 
-**Script de validação operante:** `make validate BATCH=<arquivo.parquet|csv>` valida um lote; `make demo-contract` gera `data/production/corrupted.parquet` a partir do pool e o valida. Lote bloqueado sai com **exit 2**, vai para `data/quarantine/` e gera `reports/contracts/<lote>.json` com cada regra violada (camada, severidade, contagem) e exemplos com o `customer_id` mascarado. Além do contrato das features, o script aplica regras de lote: volume mínimo, cliente reenviado (`customer_id` duplicado), colunas inesperadas como `loan_status` (vazamento) e target binário.
+**Script de validação operante:** `make validate BATCH=<arquivo.parquet|csv>` valida um lote; `make demo-contract` gera `data/production/corrupted.parquet` a partir do pool e o valida. Lote bloqueado sai com **exit 2**, vai para `data/quarantine/` e gera `reports/contracts/<lote>.json` com cada regra violada (camada, severidade, contagem) e exemplos com o `customer_id` mascarado. Além do contrato das features, o script aplica regras de lote: volume mínimo, cliente reenviado (`customer_id` duplicado), colunas inesperadas como `loan_status` (vazamento) e target binário. O resumo congelado em `docs/evidencias/contracts/corrupted-summary.json` vem do lote `corrupted` de `make simulate`, validado por `run_all --include-corrupted`; `make demo-contract` sorteia outro lote (mesmas 8 regras, contagens por regra podem variar em poucas unidades) e substitui `data/production/corrupted.parquet`: rode `make simulate` depois para restaurar o lote do manifesto.
 
 O notebook 05 cria localmente `data/invalid/bad_batch.csv`, alterando campos como valor negativo de `loan_amnt`, prazo inválido, renda ausente, FICO fora da faixa e incoerência no indicador de tempo de emprego. Sua execução demonstra tanto as mensagens do Pandera quanto a ausência de chamada ao modelo quando a validação falha.
 
@@ -357,3 +369,16 @@ marginais não substituem. Consulte a
 `docs/guias/` preserva material conceitual anterior e pode citar outro dataset
 ou outra organização. Para executar este repositório, use os comandos e guias
 atuais listados acima.
+
+## 13. Equipe e apresentação
+
+| Integrante | Etapa |
+|---|---|
+| Fabi | Etapa 1: notebooks de EDA, pré-processamento, baseline V1/V2 e contrato Pandera |
+| Helio | Etapa 2: simulação, estatísticas de drift, gate e análise consolidada; integração e congelamento da entrega |
+| Pedro | Etapa 3: pipeline instrumentado, métricas, logs, traces, stack Docker e dashboard |
+| Erick | Etapa 4: governança (LGPD, fairness, causalidade, post-mortem) e esqueleto do projeto (CI, scripts da Etapa 1) |
+
+Os commits seguem Conventional Commits (`tipo(escopo): descrição`); as exceções são o commit inicial do template e `ae07261`. O `.mailmap` unifica as identidades git dos autores.
+
+**Vídeo STAR (até 5 minutos):** _link a inserir pelo grupo antes da entrega_. Roteiro sugerido: **Situação**, degradação silenciosa de um modelo de crédito em produção (seção 1); **Tarefa**, interceptar dados ruins, detectar drift e garantir compliance; **Ação**, contrato Pandera com quarentena (`make demo-contract`), simulação e detecção com Evidently, PSI e KS (`make simulate`, `make analyze`), observabilidade com alertas (`make monitor`, Grafana) e plano de governança (seções 10 e 11); **Resultado**, a tabela de [docs/evidencias/README.md](docs/evidencias/README.md) (AUC de 0,70 para 0,56 com 21 alertas) e as lições do [post-mortem](docs/postmortem.md).

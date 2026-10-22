@@ -38,7 +38,7 @@ PUSHGATEWAY_URL=http://localhost:9091 MLFLOW_TRACKING_URI=http://localhost:5000 
 
 | Serviço | Endereço | Uso |
 |---|---|---|
-| Grafana | http://localhost:3000 | Dashboard “Observabilidade - Credit Scoring”, provisionado automaticamente |
+| Grafana | http://localhost:3000 | Dashboard “Observabilidade - Credit Scoring”, provisionado automaticamente. Acesso anônimo com papel Admin e login desabilitado (`docker-compose.yml`): configuração de laboratório local, não usar em produção |
 | Prometheus | http://localhost:9090 | Consultas e estado dos alertas |
 | MLflow | http://localhost:5000 | Experimento `credit_scoring_monitoring`, métricas e HTML/JSON |
 | Alertmanager | http://localhost:9093 | Alertas agrupados |

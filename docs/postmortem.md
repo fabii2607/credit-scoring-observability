@@ -3,12 +3,11 @@
 Execução de referência de 21/10/2026 (America/Sao_Paulo): modelo `V2_optimized`
 congelado, threshold 0,20, controle reservado de 30 mil registros com AUC
 0,6974. A base de código é o `source_revision` 72468ee (commit de 17/10/2026);
-as evidências públicas foram commitadas em c5d4029 e o HEAD da entrega é
-8c6c880 (merge do PR #15, 21/10/2026). Modelo, metadados, dados e fontes
+as evidências públicas foram commitadas em c5d4029 (21/10/2026). Modelo, metadados, dados e fontes
 efetivas são identificados por SHA-256 no
 [manifesto](evidencias/manifest.json) (`model_sha256` 86aede00…,
 `control_sha256` 9a3173db…). As tags `execucao-referencia` e `pacote-2`
-apontam para 0e42046 (merge do PR #17, 22/10/2026), que contém as evidências
+apontam para 0e42046 (merge do PR #17, 21/10/2026), que contém as evidências
 e esta documentação. Os meses 2026-01 a 2026-07 são cenários sintéticos com
 intervenções conhecidas, não datas de produção.
 
