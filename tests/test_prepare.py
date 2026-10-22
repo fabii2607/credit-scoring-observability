@@ -162,5 +162,5 @@ def test_raw_file_finds_kaggle_zip_layout(tmp_path, monkeypatch):
     # Um .csv descompactado tem prioridade sobre o .gz.
     csv = tmp_path / "data" / "accepted_2007_to_2018Q4.csv"
     csv.parent.mkdir()
-    csv.write_text("x")
+    csv.write_text("x", encoding="utf-8")
     assert config.raw_file() == csv

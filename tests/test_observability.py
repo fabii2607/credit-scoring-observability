@@ -29,7 +29,7 @@ def test_metrics_isolation_and_replacement(tmp_path, monkeypatch):
     second.set("pipeline_batch_status", 2)
     second.set("model_roc_auc", None)
     second.publish()
-    text = (tmp_path / "month.prom").read_text()
+    text = (tmp_path / "month.prom").read_text(encoding="utf-8")
     assert "model_roc_auc" not in text
     assert "pipeline_batch_status" in text
     assert push.call_count == 2
@@ -130,16 +130,20 @@ def test_real_batches_continue_after_block_and_failure(
     ].keys()
     assert not (tmp_path / "interim/corrupted/scored.parquet").exists()
     assert exit_code(outcomes) == 1
-    summary = json.loads((reports / "performance/summary.json").read_text())
+    summary = json.loads(
+        (reports / "performance/summary.json").read_text(encoding="utf-8")
+    )
     assert len(summary["batches"]) == 3
     assert "batch_sha256" not in summary["context"]
     assert "original_sha256" not in summary["context"]
-    text = (reports / "metrics/2026-01.prom").read_text()
+    text = (reports / "metrics/2026-01.prom").read_text(encoding="utf-8")
     assert "model_roc_auc" in text
     assert "feature_psi" in text
-    blocked = (reports / "metrics/corrupted.prom").read_text()
+    blocked = (reports / "metrics/corrupted.prom").read_text(encoding="utf-8")
     assert "model_roc_auc" not in blocked
-    contract = json.loads((reports / "monitoring/corrupted/contract.json").read_text())
+    contract = json.loads(
+        (reports / "monitoring/corrupted/contract.json").read_text(encoding="utf-8")
+    )
     assert all("examples" not in v for v in contract["violations"])
     ids = set(reference.customer_id)
     for path in (tmp_path / "interim").glob("*/scored.parquet"):
@@ -150,5 +154,5 @@ def test_real_batches_continue_after_block_and_failure(
         *(reports / "metrics").glob("*"),
         *(reports / "monitoring").rglob("*.json"),
     ]:
-        content = path.read_text()
+        content = path.read_text(encoding="utf-8")
         assert not any(value in content for value in ids)

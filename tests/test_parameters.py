@@ -93,10 +93,10 @@ def test_invalid_performance_configuration(kwargs):
 
 
 def test_batch_volume_must_match_contract(tmp_path):
-    data = yaml.safe_load(PARAMS_PATH.read_text())
+    data = yaml.safe_load(PARAMS_PATH.read_text(encoding="utf-8"))
     data["contract"]["min_rows"] = 20_000
     path = tmp_path / "params.yaml"
-    path.write_text(yaml.safe_dump(data))
+    path.write_text(yaml.safe_dump(data), encoding="utf-8")
     with pytest.raises(ValidationError, match=r"contract\.min_rows"):
         load_params(path)
 

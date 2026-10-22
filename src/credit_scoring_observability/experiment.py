@@ -175,7 +175,7 @@ def write_experiment(outcomes: list[dict], reports_dir: Path, context: dict) -> 
     for row in successful:
         path = reports_dir / "intervention" / f"{row['batch_id']}.json"
         if path.exists():
-            comparison = json.loads(path.read_text())
+            comparison = json.loads(path.read_text(encoding="utf-8"))
             features.extend(
                 {"batch_id": row["batch_id"], **f} for f in comparison["features"]
             )

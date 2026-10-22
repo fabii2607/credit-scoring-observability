@@ -116,7 +116,7 @@ class BatchObserver:
         contract = self.reports_dir / "contracts" / f"{self.batch_id}.json"
         artifacts = []
         if contract.exists() and "validate" in self.stages:
-            data = json.loads(contract.read_text())
+            data = json.loads(contract.read_text(encoding="utf-8"))
             safe = {
                 k: data[k]
                 for k in ("batch_id", "n_rows", "passed", "n_blockers", "n_warnings")
@@ -181,7 +181,9 @@ class BatchObserver:
 
     def publish_analysis(self, outcome):
         drift = json.loads(
-            (self.reports_dir / "drift" / f"{self.batch_id}.json").read_text()
+            (self.reports_dir / "drift" / f"{self.batch_id}.json").read_text(
+                encoding="utf-8"
+            )
         )
         gate = drift["gate"]
         for feature in drift["features"]:

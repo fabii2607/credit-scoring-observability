@@ -244,7 +244,7 @@ def run(batch_ids: list[str] | None = None, output: Path = CAUSAL_REPORT) -> dic
     model = load_model()
     params = get_params()
     manifest_path = PRODUCTION_DIR / "manifest.json"
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     reference = pd.read_parquet(REFERENCE_SAMPLE_FILE).drop(
         columns=SPLIT_COLUMN, errors="ignore"
     )
