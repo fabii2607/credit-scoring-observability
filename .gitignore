@@ -57,3 +57,9 @@ reports/release/
 
 # Handoffs por etapa: distribuídos à parte (PR #9), não versionados
 docs/handoff/
+
+# Apresentação STAR: só o PDF e as capturas finais são versionados
+docs/apresentacao_star.html
+docs/roteiro_video_star.md
+docs/images/*-crop.png
+docs/images/grafana-dashboard-full.png

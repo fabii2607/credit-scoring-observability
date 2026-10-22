@@ -7,7 +7,8 @@ execução de referência de 21/10/2026. Ficam como registro histórico.
 
 As evidências válidas da observabilidade estão em
 [`docs/evidencias/observability/`](../evidencias/observability/README.md)
-(verificação da stack e dos alertas recebidos). Recapturar as telas com a
-stack atual (`make up-full` e o comando de referência de
-[`delivery.md`](../delivery.md)) é uma ação proposta no
-[post-mortem](../postmortem.md).
+(verificação da stack e dos alertas recebidos). As telas recapturadas com a
+stack atual (10 regras, oito lotes com o desfecho esperado) estão em
+[`docs/images/`](../images/): dashboard do Grafana, Alertmanager, Prometheus,
+MLflow, Loki e Tempo, capturadas em 22/10/2026 com o comando de referência de
+[`delivery.md`](../delivery.md).

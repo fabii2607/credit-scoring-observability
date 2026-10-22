@@ -1,10 +1,119 @@
 # Credit Scoring Observability
 
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9-F7931E?logo=scikitlearn&logoColor=white)
+![Pandera](https://img.shields.io/badge/Pandera-contrato_de_dados-0B5FFF)
+![Evidently](https://img.shields.io/badge/Evidently-drift-7C3AED)
+![MLflow](https://img.shields.io/badge/MLflow-tracking-0194E2?logo=mlflow&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-m%C3%A9tricas-E6522C?logo=prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-Loki_%C2%B7_Tempo-F46800?logo=grafana&logoColor=white)
+![CI](https://github.com/fabii2607/credit-scoring-observability/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 **Tech Challenge – Fase 04 | Pós-Tech em Machine Learning Engineering (FIAP)**
 
 Projeto acadêmico de classificação binária de risco de crédito com o **All Lending Club Loan Data**: preparação de dados, Regressão Logística V2, contrato Pandera, simulação de drift, avaliação de performance, recomendações operacionais e observabilidade integrada.
 
 > **Estado da entrega:** dados/modelo/contrato e monitoramento dos sete meses estão implementados. A observabilidade integra MLflow, Prometheus, Grafana, Loki e Tempo. O gate recomenda ações para revisão humana; não há treinamento ou promoção automática. Veja o [guia de entrega e reprodução](docs/delivery.md) e as [evidências da execução de referência](docs/evidencias/README.md).
+
+## Demo
+
+### Apresentação em vídeo (Método STAR — 5 min)
+
+<!-- Substitua VIDEO_ID (nas duas ocorrências) pelo id do vídeo no YouTube: o trecho após "v=" na URL. -->
+[![Assista à apresentação do projeto](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+
+Slides da apresentação em [docs/apresentacao_star.pdf](docs/apresentacao_star.pdf).
+
+### A stack em funcionamento
+
+Capturas de 22/10/2026, com os oito lotes processados por `run_all` contra a
+stack completa (`make up-full`). Os valores coincidem com a
+[execução de referência](docs/evidencias/README.md); as demais telas
+(Prometheus, Loki, lista de runs) estão em [docs/images/](docs/images/).
+
+| Grafana — dashboard provisionado | Alertmanager — 21 alertas por regra e lote |
+|---|---|
+| ![Dashboard Grafana](docs/images/grafana-dashboard.png) | ![Alertmanager](docs/images/alertmanager-alerts.png) |
+| **MLflow — run do lote 2026-06 (gate ALERT)** | **Tempo — um trace por lote, um span por estágio** |
+| ![Run MLflow](docs/images/mlflow-run-2026-06.png) | ![Trace no Tempo](docs/images/grafana-tempo-trace.png) |
+
+## Resultados em um minuto
+
+Execução de referência de 21/10/2026: modelo V2 congelado (threshold 0,20),
+sete lotes sintéticos de 10 mil registros e um lote `corrupted` bloqueado
+pelo contrato antes da inferência. AUC do controle reservado (30 mil
+registros fora do treino): **0,6974**.
+
+| Mês | Cenário | AUC | Queda vs. controle | PSI do score | Aprovação | Features com drift | Gate · ação |
+|---|---|---:|---:|---:|---:|---|---|
+| 2026-01 | estável | 0,7051 | −0,0077 | 0,0015 | 59,4% | 0/23 | OK · observar |
+| 2026-02 | estável | 0,7035 | −0,0061 | 0,0017 | 59,5% | 0/23 | OK · observar |
+| 2026-03 | entradas alteradas | 0,6963 | +0,0011 | 0,3014 | 35,4% | 3/23 | WARN · reforçar monitoramento |
+| 2026-04 | entradas alteradas | 0,6995 | −0,0021 | 0,7248 | 24,5% | 4/23 | WARN · reforçar monitoramento |
+| 2026-05 | rótulos alterados | 0,6181 | +0,0793 | 0,0011 | 59,3% | 0/23 | ALERT · avaliar retreinamento |
+| 2026-06 | rótulos alterados | 0,5993 | +0,0981 | 0,0010 | 59,2% | 0/23 | ALERT · avaliar retreinamento |
+| 2026-07 | rótulos alterados | 0,5589 | +0,1385 | 0,0024 | 58,3% | 0/23 | ALERT · avaliar retreinamento |
+
+- O gate decide só com métricas e cobertura de rótulos, sem conhecer o cenário;
+  ALERT exige o IC 95% da queda inteiro acima de 0,05. Ele recomenda; nenhum
+  retreino ou promoção é automático.
+- Em março e abril a AUC ficou estável e a aprovação caiu até 35 p.p.: AUC
+  mede ordenação, não decisão. Em maio–julho nada em X mudou e a AUC caiu:
+  degradação que só aparece com rótulos.
+- 21 alertas chegaram ao Alertmanager, todos com runbook; nenhum nos meses
+  estáveis. Detalhes no [post-mortem](docs/postmortem.md) e na
+  [linha do tempo](docs/incident-timeline.md).
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    subgraph PREP["Preparação — make prepare · make train"]
+        RAW[("Lending Club<br/>2,26 M × 151")] --> PRE["prepare.py<br/>pseudonimização · região · split 80/20"]
+        PRE --> REF[("Referência<br/>1,08 M")]
+        PRE --> POOL[("Pool de produção<br/>269.620")]
+        REF --> TRAIN["train.py<br/>LogReg V2 · threshold 0,20"]
+    end
+
+    subgraph SIM["Simulação — make simulate"]
+        POOL --> LOTES["7 lotes mensais + controle 30 mil<br/>+ demo corrupted"]
+    end
+
+    subgraph PIPE["Pipeline mensal — make monitor"]
+        LOTES --> VAL["validate<br/>contrato Pandera + regras de lote"]
+        VAL -->|"bloqueado · exit 2"| Q[("quarentena<br/>30 dias")]
+        VAL --> SCORE["score"] --> DRIFT["drift<br/>PSI · KS · JS · Evidently"]
+        DRIFT --> PERF["performance<br/>AUC vs. controle · IC bootstrap"]
+        PERF --> GATE["gate<br/>OK · WARN · ALERT"] --> REP["reports<br/>HTML · JSON"]
+    end
+
+    subgraph OBS["Observabilidade — make up-full"]
+        PG["Pushgateway → Prometheus<br/>→ Alertmanager (10 regras)"]
+        LK["Alloy → Loki"]
+        TP["Tempo"]
+        ML["MLflow<br/>run por lote"]
+        GF["Grafana<br/>20 painéis"]
+        PG --> GF
+        LK --> GF
+        TP --> GF
+    end
+
+    TRAIN -->|"modelo + metadados"| SCORE
+    PIPE -->|"métricas"| PG
+    PIPE -->|"logs JSONL"| LK
+    PIPE -->|"traces OTel"| TP
+    PIPE -->|"HTML · JSON"| ML
+
+    style VAL fill:#fee2e2,stroke:#dc2626
+    style GATE fill:#fef9c3,stroke:#ca8a04
+    style GF fill:#ffedd5,stroke:#f97316
+    style ML fill:#dbeafe,stroke:#2563eb
+```
+
+Nada no caminho de inferência depende da stack: `make analyze` produz os
+mesmos relatórios sem Docker, e `make monitor` acrescenta métricas, logs,
+traces e MLflow (em modo local quando os endpoints estão vazios).
 
 ## 1. Dataset e definição do problema
 
@@ -369,3 +478,39 @@ marginais não substituem. Consulte a
 `docs/guias/` preserva material conceitual anterior e pode citar outro dataset
 ou outra organização. Para executar este repositório, use os comandos e guias
 atuais listados acima.
+
+## 13. Relação com os requisitos do Tech Challenge
+
+| Requisito do enunciado | Onde está | Estado |
+|---|---|---|
+| Classificador base treinado na Referência | `train.py`, notebooks 03–04, [model card](docs/model-card.md) | ✅ |
+| Contrato de dados com ≥ 3 regras rígidas | `data_contract.py` (Pandera, 23 features) + regras de lote em `validate.py` | ✅ |
+| Lote com erros bloqueando a ingestão; script de validação operante | `make demo-contract` (exit 2, quarentena, relatório); [resumo congelado](docs/evidencias/contracts/corrupted-summary.json) | ✅ |
+| Separação Referência × Produção | `prepare.py` (80/20 estratificado, seed 42) | ✅ |
+| Produção com ≥ 2 variáveis alteradas + predições | `simulation.py` (4 features em março/abril) + `analyze.py` | ✅ |
+| Evidently Referência × Produção; PSI/KS por feature | `drift.py`, `drift_report.py`, [HTMLs](docs/evidencias/README.md) | ✅ |
+| Logs e métricas centralizados; MLflow e dashboard | `run_all.py`, `observation.py`, `metrics.py`, [`monitoring/`](monitoring/) | ✅ |
+| Métricas de saúde documentadas; alertas com runbook | [plano de monitoramento](docs/monitoring-plan.md), `alert_rules.yml` | ✅ |
+| Governança LGPD no README: PII, base legal, retenção | seção 10, [docs/lgpd.md](docs/lgpd.md) | ✅ |
+| Mitigação de vieses; análise causal | `fairness.py`, `mitigation.py`, `causal.py`, seções 10–11 | ✅ |
+| Commits semânticos | histórico do repositório | ✅ |
+| Vídeo STAR | seção [Demo](#demo) | ⏳ link entra após a gravação |
+
+## 14. Tecnologias
+
+| Categoria | Stack |
+|---|---|
+| Modelo | scikit-learn — Regressão Logística em pipeline (imputação, RobustScaler, one-hot) |
+| Contrato de dados | Pandera + regras de lote próprias |
+| Drift e performance | PSI, KS, JS próprios; Evidently para o relatório; bootstrap para IC |
+| Experimentos | MLflow (servidor com proxy de artefatos) |
+| Métricas e alertas | prometheus-client + Pushgateway + Prometheus + Alertmanager |
+| Logs e traces | structlog → Alloy → Loki; OpenTelemetry → Tempo |
+| Dashboard | Grafana provisionado (`scripts/generate_dashboard.py`) |
+| Governança | fairlearn (auditoria por região), pseudonimização SHA-256 com sal |
+| Qualidade | Ruff + pytest (199 testes com dados sintéticos) + pre-commit + GitHub Actions |
+| Ambiente | uv + `uv.lock` + Docker Compose |
+
+## Licença
+
+[MIT](LICENSE) — Tech Challenge Fase 4, Pós-Tech em Machine Learning Engineering (FIAP).
