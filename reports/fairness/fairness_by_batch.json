@@ -1,0 +1,280 @@
+{
+  "model_version": "V2_optimized",
+  "threshold": 0.2,
+  "source": "data/production (make simulate)",
+  "batches": {
+    "2026-01": {
+      "scenario": "stable",
+      "intensity": 0.0,
+      "threshold": 0.2,
+      "n": {
+        "Midwest": 1750,
+        "Northeast": 1977,
+        "South": 3573,
+        "West": 2700
+      },
+      "approval_rate": {
+        "Midwest": 0.5857,
+        "Northeast": 0.5857,
+        "South": 0.5998,
+        "West": 0.5963
+      },
+      "tpr": {
+        "Midwest": 0.6433,
+        "Northeast": 0.6366,
+        "South": 0.6399,
+        "West": 0.6384
+      },
+      "fpr": {
+        "Midwest": 0.3558,
+        "Northeast": 0.358,
+        "South": 0.3342,
+        "West": 0.3462
+      },
+      "default_rate": {
+        "Midwest": 0.2034,
+        "Northeast": 0.2018,
+        "South": 0.2161,
+        "West": 0.1967
+      },
+      "disparate_impact": 0.9766,
+      "tpr_gap": 0.0067,
+      "fpr_gap": 0.0239,
+      "passes_four_fifths": true
+    },
+    "2026-02": {
+      "scenario": "stable",
+      "intensity": 0.0,
+      "threshold": 0.2,
+      "n": {
+        "Midwest": 1736,
+        "Northeast": 1988,
+        "South": 3573,
+        "West": 2703
+      },
+      "approval_rate": {
+        "Midwest": 0.6083,
+        "Northeast": 0.577,
+        "South": 0.6006,
+        "West": 0.5927
+      },
+      "tpr": {
+        "Midwest": 0.6334,
+        "Northeast": 0.6585,
+        "South": 0.6268,
+        "West": 0.638
+      },
+      "fpr": {
+        "Midwest": 0.3326,
+        "Northeast": 0.3545,
+        "South": 0.3387,
+        "West": 0.3564
+      },
+      "default_rate": {
+        "Midwest": 0.1964,
+        "Northeast": 0.2254,
+        "South": 0.2107,
+        "West": 0.1809
+      },
+      "disparate_impact": 0.9485,
+      "tpr_gap": 0.0317,
+      "fpr_gap": 0.0238,
+      "passes_four_fifths": true
+    },
+    "2026-03": {
+      "scenario": "data_drift",
+      "intensity": 0.6,
+      "threshold": 0.2,
+      "n": {
+        "Midwest": 1744,
+        "Northeast": 2039,
+        "South": 3481,
+        "West": 2736
+      },
+      "approval_rate": {
+        "Midwest": 0.3567,
+        "Northeast": 0.3521,
+        "South": 0.3453,
+        "West": 0.3662
+      },
+      "tpr": {
+        "Midwest": 0.8455,
+        "Northeast": 0.8514,
+        "South": 0.8516,
+        "West": 0.8433
+      },
+      "fpr": {
+        "Midwest": 0.5939,
+        "Northeast": 0.5987,
+        "South": 0.6074,
+        "West": 0.5865
+      },
+      "default_rate": {
+        "Midwest": 0.1967,
+        "Northeast": 0.1947,
+        "South": 0.1936,
+        "West": 0.1842
+      },
+      "disparate_impact": 0.9429,
+      "tpr_gap": 0.0084,
+      "fpr_gap": 0.0209,
+      "passes_four_fifths": true
+    },
+    "2026-04": {
+      "scenario": "data_drift",
+      "intensity": 1.0,
+      "threshold": 0.2,
+      "n": {
+        "Midwest": 1762,
+        "Northeast": 2003,
+        "South": 3517,
+        "West": 2718
+      },
+      "approval_rate": {
+        "Midwest": 0.2372,
+        "Northeast": 0.2646,
+        "South": 0.2474,
+        "West": 0.2314
+      },
+      "tpr": {
+        "Midwest": 0.8949,
+        "Northeast": 0.8925,
+        "South": 0.9066,
+        "West": 0.9391
+      },
+      "fpr": {
+        "Midwest": 0.7298,
+        "Northeast": 0.6962,
+        "South": 0.7102,
+        "West": 0.7293
+      },
+      "default_rate": {
+        "Midwest": 0.1998,
+        "Northeast": 0.1997,
+        "South": 0.2161,
+        "West": 0.1873
+      },
+      "disparate_impact": 0.8746,
+      "tpr_gap": 0.0466,
+      "fpr_gap": 0.0336,
+      "passes_four_fifths": true
+    },
+    "2026-05": {
+      "scenario": "concept_drift",
+      "intensity": 0.35,
+      "threshold": 0.2,
+      "n": {
+        "Midwest": 1842,
+        "Northeast": 2057,
+        "South": 3511,
+        "West": 2590
+      },
+      "approval_rate": {
+        "Midwest": 0.5901,
+        "Northeast": 0.5897,
+        "South": 0.6038,
+        "West": 0.5815
+      },
+      "tpr": {
+        "Midwest": 0.5362,
+        "Northeast": 0.545,
+        "South": 0.543,
+        "West": 0.5463
+      },
+      "fpr": {
+        "Midwest": 0.3732,
+        "Northeast": 0.3732,
+        "South": 0.3543,
+        "West": 0.3857
+      },
+      "default_rate": {
+        "Midwest": 0.2248,
+        "Northeast": 0.2158,
+        "South": 0.2219,
+        "West": 0.2042
+      },
+      "disparate_impact": 0.963,
+      "tpr_gap": 0.0101,
+      "fpr_gap": 0.0314,
+      "passes_four_fifths": true
+    },
+    "2026-06": {
+      "scenario": "concept_drift",
+      "intensity": 0.55,
+      "threshold": 0.2,
+      "n": {
+        "Midwest": 1785,
+        "Northeast": 2009,
+        "South": 3536,
+        "West": 2670
+      },
+      "approval_rate": {
+        "Midwest": 0.5989,
+        "Northeast": 0.562,
+        "South": 0.6046,
+        "West": 0.5948
+      },
+      "tpr": {
+        "Midwest": 0.4961,
+        "Northeast": 0.5488,
+        "South": 0.5456,
+        "West": 0.516
+      },
+      "fpr": {
+        "Midwest": 0.375,
+        "Northeast": 0.4069,
+        "South": 0.3537,
+        "West": 0.3757
+      },
+      "default_rate": {
+        "Midwest": 0.2157,
+        "Northeast": 0.2195,
+        "South": 0.2172,
+        "West": 0.2105
+      },
+      "disparate_impact": 0.9294,
+      "tpr_gap": 0.0526,
+      "fpr_gap": 0.0532,
+      "passes_four_fifths": true
+    },
+    "2026-07": {
+      "scenario": "concept_drift",
+      "intensity": 0.75,
+      "threshold": 0.2,
+      "n": {
+        "Midwest": 1776,
+        "Northeast": 2021,
+        "South": 3596,
+        "West": 2607
+      },
+      "approval_rate": {
+        "Midwest": 0.5952,
+        "Northeast": 0.5814,
+        "South": 0.5818,
+        "West": 0.5761
+      },
+      "tpr": {
+        "Midwest": 0.4816,
+        "Northeast": 0.4938,
+        "South": 0.5037,
+        "West": 0.51
+      },
+      "fpr": {
+        "Midwest": 0.382,
+        "Northeast": 0.3952,
+        "South": 0.3932,
+        "West": 0.4009
+      },
+      "default_rate": {
+        "Midwest": 0.2292,
+        "Northeast": 0.2375,
+        "South": 0.2264,
+        "West": 0.2106
+      },
+      "disparate_impact": 0.968,
+      "tpr_gap": 0.0284,
+      "fpr_gap": 0.0188,
+      "passes_four_fifths": true
+    }
+  }
+}

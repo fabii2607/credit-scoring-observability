@@ -1,4 +1,4 @@
-.PHONY: help setup lint lint-fix test test-unit test-cov prepare train validate demo-contract simulate analyze monitor fairness causal purge-quarantine clean
+.PHONY: help setup lint lint-fix test test-unit test-cov prepare train validate demo-contract simulate analyze monitor fairness fairness-batches causal purge-quarantine clean
 
 PKG := credit_scoring_observability
 
@@ -61,6 +61,9 @@ up-full: ## Start the full observability stack including logs and traces
 # ── Etapa 4: governança ──────────────────────────────────────────────────────
 fairness: ## Fairness by region on the production pool + mitigation evaluation (not adopted)
 	uv run python -m $(PKG).mitigation
+
+fairness-batches: ## Fairness by region on each simulated monthly batch (needs make simulate)
+	uv run python -m $(PKG).fairness
 
 causal: ## Causal attribution of the drift (needs the batches from make simulate)
 	uv run python -m $(PKG).causal

@@ -72,9 +72,11 @@ preservar o histórico dos volumes.
 2. [Experimento consolidado](evidencias/experiment/summary.md): gráficos e tabela.
 3. HTMLs de janeiro, abril e junho: recomendação no topo e evidência abaixo.
 4. [Linha do tempo](incident-timeline.md): intervenções e efeitos medidos.
-5. [Sensibilidade](causal-analysis.md), [model card](model-card.md) e
+5. [Post-mortem do incidente simulado](postmortem.md): detecção, causa,
+   lições e ações propostas.
+6. [Sensibilidade](causal-analysis.md), [model card](model-card.md) e
    [decisões técnicas](decisions/0001-drift-statistics.md).
-6. [Runbooks](monitoring-plan.md): como investigar os alertas.
+7. [Runbooks](monitoring-plan.md): como investigar os alertas.
 
 No GitHub, baixe cada HTML e abra no navegador. Em um clone, abra diretamente
 `docs/evidencias/drift/<mês>.html`; API e Docker não são necessários para isso.

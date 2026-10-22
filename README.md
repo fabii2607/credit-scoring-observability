@@ -72,6 +72,7 @@ make help           # todos os alvos disponíveis
 | `make validate BATCH=<arquivo>` | `uv run python -m credit_scoring_observability.validate --batch <arquivo>` |
 | `make demo-contract` | `uv run python -m credit_scoring_observability.validate --demo-corrupted` |
 | `make fairness` | `uv run python -m credit_scoring_observability.mitigation` |
+| `make fairness-batches` | `uv run python -m credit_scoring_observability.fairness` |
 | `make causal` | `uv run python -m credit_scoring_observability.causal` |
 | `make purge-quarantine` | `uv run python -m credit_scoring_observability.retention` |
 
@@ -81,14 +82,16 @@ O `uv sync` utiliza `pyproject.toml` e `uv.lock`. Para notebooks no VS Code, sel
 
 Para subir a infraestrutura de observabilidade da **Etapa 3** (requer Docker):
 
-# Sobe Prometheus, Grafana, MLflow, Loki, Tempo e Alloy
+```powershell
+# Sobe Prometheus, Grafana, MLflow, Loki, Tempo e Alloy (ou: make up-full)
 docker compose --profile core --profile logs-traces up -d
 
 # Executa o pipeline de lotes para gerar métricas e rastreios
 uv run --env-file .env python -m credit_scoring_observability.run_all
 
 # Gera o Dashboard Definitivo no Grafana via API
-uv run python src/credit_scoring_observability/generate_dashboard.py
+uv run python scripts/generate_dashboard.py
+```
 
 ## 3. Estrutura do projeto
 
@@ -102,6 +105,7 @@ credit-scoring-observability/
 ├── models/                            # modelo (.joblib, local) e metadados/métricas (.json)
 ├── notebooks/                         # 01_eda … 05_data_contract
 ├── reports/contracts/                 # relatório JSON de cada lote validado (local)
+├── reports/fairness/                  # fairness_report.json (pool, versionado); fairness_by_batch.json (por lote simulado, versionado; make fairness-batches)
 ├── src/credit_scoring_observability/
 │   ├── config.py · parameters.py      # caminhos, colunas e params.yaml validado
 │   ├── logger.py                      # logs estruturados, customer_id mascarado
@@ -117,6 +121,7 @@ credit-scoring-observability/
 │   ├── run_batch.py · run_all.py       # execução com observabilidade
 │   ├── observation.py · metrics.py     # publicação e registro da execução
 │   ├── causal.py                       # sensibilidade à restauração de marginais
+│   ├── fairness.py · mitigation.py     # viés por região; mitigação avaliada, não adotada
 │   └── synthetic.py                    # dados sintéticos para testes
 ├── tests/                             # pytest, só com dados sintéticos
 ├── docs/
@@ -291,7 +296,9 @@ Razão de impacto desigual **0,983** (regra dos 4/5: 0,8). A mitigação por thr
 - a diferença de FPR cairia de 1,4 para 0,5 p.p.;
 - usar a região na decisão seria tratamento diferenciado por proxy de raça (Art. 6º, IX).
 
-A região permanece fora do modelo. A análise de fairness e a revisão humana fazem parte da proposta de governança. O guardrail de não piorar a razão em mais de 0,05 é uma política proposta para eventual challenger; não há promoção ou retreinamento automatizado implementado.
+A região permanece fora do modelo. A análise de fairness no pool está implementada (`make fairness`) e a medição por lote existe como comando (`make fairness-batches`, tabela em [docs/lgpd.md](docs/lgpd.md) seção 8); a integração ao pipeline mensal e o guardrail para eventual challenger são propostas — não há retreino ou promoção automatizados.
+
+Nos sete lotes mensais simulados (`reports/fairness/fairness_by_batch.json`, gerado com os lotes de `make simulate`), a razão de impacto desigual ficou entre **0,875** (2026-04, deslocamento de entradas na intensidade máxima) e **0,977** (2026-01), sempre acima de 0,8. A disparidade entre regiões cresce quando o score se desloca, mas não chega ao limite da regra dos 4/5.
 
 ## 11. Análise causal
 
@@ -312,10 +319,26 @@ O DAG apresenta **hipóteses ilustrativas**, não relações causais estimadas.
 grupos renda + DTI, rotativo e FICO. O mapeamento por quantis é monotônico por
 coluna; não garante as relações estruturais do DAG nem a distribuição conjunta.
 
-A AUC é comparada ao mesmo controle reservado usado pelo monitoramento.
-Nos lotes finais, os resultados são compatíveis com deslocamento de entradas
-em março/abril e degradação não recuperada pela restauração em maio–julho.
-Isso não prova causalidade econômica nem substitui o gate. Consulte a
+A AUC é comparada ao mesmo controle reservado usado pelo monitoramento
+(AUC 0,6974). Nos lotes da execução de referência
+(`docs/evidencias/causal/causal_analysis.json`), restaurar as marginais dos
+três grupos ao mesmo tempo dá o seguinte quadro:
+
+| Mês | AUC no lote | AUC após restauração | PSI do score | PSI após restauração | Diagnóstico |
+|---|---|---|---|---|---|
+| 2026-03 | 0,6963 | 0,6948 | 0,3014 | 0,0008 | covariate shift compatível |
+| 2026-04 | 0,6995 | 0,6970 | 0,7248 | 0,0009 | covariate shift compatível |
+| 2026-05 | 0,6181 | 0,6184 | 0,0011 | 0,0010 | concept drift suspeito |
+| 2026-06 | 0,5993 | 0,5993 | 0,0010 | 0,0011 | concept drift suspeito |
+| 2026-07 | 0,5589 | 0,5589 | 0,0024 | 0,0023 | concept drift suspeito |
+
+Os resultados são compatíveis com deslocamento de entradas em março/abril
+(o PSI do score volta quase a zero ao restaurar as marginais) e com degradação
+não recuperada pela restauração em maio–julho (a AUC cai com o score
+estável). Os meses são cenários sintéticos. Isso não prova causalidade
+econômica nem substitui o gate: identificar a causa real exigiria dados de
+intervenção ou um desenho quase-experimental, que o DAG e a restauração de
+marginais não substituem. Consulte a
 [análise de sensibilidade e seus limites](docs/causal-analysis.md) e a
 [linha do tempo do incidente](docs/incident-timeline.md).
 
@@ -323,6 +346,7 @@ Isso não prova causalidade econômica nem substitui o gate. Consulte a
 
 - [Reprodução e critérios de entrega](docs/delivery.md).
 - [Model card da V2](docs/model-card.md).
+- [Post-mortem do incidente simulado](docs/postmortem.md).
 - [Decisões sobre drift](docs/decisions/0001-drift-statistics.md) e
   [baseline de performance e gate](docs/decisions/0002-performance-gate.md).
 - [Análise consolidada e política do gate](docs/experiment-analysis.md).

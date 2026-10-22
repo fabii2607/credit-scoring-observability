@@ -28,6 +28,7 @@ Queda pareada compara os mesmos registros antes/depois; PSI não é aditivo.
 - [Bloqueio do contrato](contracts/corrupted-summary.json).
 - [Manifesto de dados, modelo, fontes, parâmetros e dependências](manifest.json).
 - [Linha do tempo e interpretação](../incident-timeline.md).
+- [Post-mortem do incidente simulado](../postmortem.md).
 
 Baixe os HTMLs e abra no navegador; o GitHub normalmente mostra o código.
 Cada HTML contém Evidently e o resumo com recomendação, métricas e comparação

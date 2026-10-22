@@ -10,12 +10,19 @@ negação. Razão de impacto desigual = menor aprovação entre as regiões / ma
 a regra dos 4/5 trata < 0,8 como sinal de alerta.
 
 Usado em:
-    - relatório de governança (`make fairness`, README, model card);
-    - monitoramento por lote, sem rótulo (`approval_disparity`, Etapa 3);
-    - guardrail do retreino (`fairness_by_region`, Etapa 2).
+    - relatório de governança no pool (`make fairness`, README, model card);
+    - medição por lote simulado, com rótulo (`make fairness-batches`, abaixo);
+    - `approval_disparity` mede a razão sem rótulo, mas não está integrada ao
+      pipeline mensal; o guardrail de retreino é só uma política proposta.
+
+Uso (`make fairness-batches`, precisa dos lotes de `make simulate`):
+    uv run python -m credit_scoring_observability.fairness
 """
 
 from __future__ import annotations
+
+import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -27,7 +34,22 @@ from fairlearn.metrics import (
     true_positive_rate,
 )
 
+from credit_scoring_observability.config import (
+    PRODUCTION_DIR,
+    REGION_COLUMN,
+    REPORTS_DIR,
+    SCORE_COLUMN,
+    TARGET,
+)
+from credit_scoring_observability.logger import get_logger, setup_logging
+
+logger = get_logger(__name__)
+
 FOUR_FIFTHS = 0.8
+
+FAIRNESS_BY_BATCH_REPORT = REPORTS_DIR / "fairness" / "fairness_by_batch.json"
+# Lote da demonstração de contrato: bloqueado antes da inferência, sem fairness.
+CORRUPTED_BATCH_ID = "corrupted"
 
 
 def _groups(groups: pd.Series | np.ndarray) -> pd.Series:
@@ -86,3 +108,66 @@ def fairness_by_region(
         "fpr_gap": round(float(by_group["fpr"].max() - by_group["fpr"].min()), 4),
         "passes_four_fifths": bool(approval.min() / approval.max() >= FOUR_FIFTHS),
     }
+
+
+def fairness_by_batches(model, production_dir: Path = PRODUCTION_DIR) -> dict:
+    """Fairness por região em cada lote mensal simulado (`make simulate`).
+
+    Lê `manifest.json`, pontua cada lote de `batches` com o modelo vigente e
+    aplica `fairness_by_region` ao rótulo do lote. O lote corrompido da demo
+    não entra: o contrato o bloqueia antes da inferência. Os meses são cenários
+    sintéticos; a medição não roda dentro do pipeline mensal.
+    """
+    manifest_path = Path(production_dir) / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    batches = {}
+    for batch in manifest["batches"]:
+        batch_id = str(batch["batch_id"])
+        if batch_id == CORRUPTED_BATCH_ID:
+            continue
+        scored = model.score(pd.read_parquet(Path(production_dir) / batch["path"]))
+        batches[batch_id] = {
+            "scenario": batch.get("scenario"),
+            "intensity": batch.get("intensity"),
+            **fairness_by_region(
+                scored[TARGET],
+                scored[SCORE_COLUMN],
+                model.threshold,
+                scored[REGION_COLUMN],
+            ),
+        }
+    return {
+        "model_version": model.version,
+        "threshold": float(model.threshold),
+        "source": "data/production (make simulate)",
+        "batches": batches,
+    }
+
+
+def main(
+    production_dir: Path = PRODUCTION_DIR, output: Path = FAIRNESS_BY_BATCH_REPORT
+) -> dict:
+    from credit_scoring_observability.registry import load_model
+
+    setup_logging()
+    report = fairness_by_batches(load_model(), production_dir)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    impacts = {k: v["disparate_impact"] for k, v in report["batches"].items()}
+    logger.info(
+        "fairness por região nos lotes simulados",
+        lotes=len(impacts),
+        impacto_desigual_min=min(impacts.values(), default=None),
+        impacto_desigual_max=max(impacts.values(), default=None),
+        abaixo_de_4_5=[k for k, v in impacts.items() if v < FOUR_FIFTHS],
+        relatorio=str(output),
+    )
+    return report
+
+
+if __name__ == "__main__":
+    main()
