@@ -20,8 +20,7 @@ Projeto acadêmico de classificação binária de risco de crédito com o **All 
 
 ### Apresentação em vídeo (Método STAR — 5 min)
 
-<!-- Substitua VIDEO_ID (nas duas ocorrências) pelo id do vídeo no YouTube: o trecho após "v=" na URL. -->
-[![Assista à apresentação do projeto](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+[![Assista à apresentação do projeto](https://img.youtube.com/vi/vmKxWDNpZZI/maxresdefault.jpg)](https://www.youtube.com/watch?v=vmKxWDNpZZI)
 
 Slides da apresentação em [docs/apresentacao_star.pdf](docs/apresentacao_star.pdf).
 
@@ -494,7 +493,7 @@ atuais listados acima.
 | Governança LGPD no README: PII, base legal, retenção | seção 10, [docs/lgpd.md](docs/lgpd.md) | ✅ |
 | Mitigação de vieses; análise causal | `fairness.py`, `mitigation.py`, `causal.py`, seções 10–11 | ✅ |
 | Commits semânticos | histórico do repositório | ✅ |
-| Vídeo STAR | seção [Demo](#demo) | ⏳ link entra após a gravação |
+| Vídeo STAR | seção [Demo](#demo) | ✅ |
 
 ## 14. Tecnologias
 
